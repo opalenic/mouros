@@ -1,0 +1,6 @@
+[submodule "libsrc/libopencm3"]
+	path = libsrc/libopencm3
+	url = https://github.com/libopencm3/libopencm3.git
+[submodule "libsrc/common-stm32"]
+	path = libsrc/common-stm32
+	url = https://github.com/mour/common-stm32.git
