@@ -42,7 +42,12 @@ static task_t idle_task;
 // should never run delay in the idle task!
 static void __os_idle_task(void *params)
 {
-	while(true);
+	while(true) {
+		for (uint32_t i = 0; i < 10000; i++) {
+			asm("nop");
+		}
+		bsp_led_toggle(LEDO);
+	}
 }
 
 
@@ -156,7 +161,8 @@ void pend_sv_handler(void)
 
 	pop_prg_stack();
 
-	asm("bx lr");
+	asm("bx %[exc_ret]"
+	    :: [exc_ret] "r" (0xFFFFFFFD));
 }
 
 void sys_tick_handler(void)
@@ -165,15 +171,17 @@ void sys_tick_handler(void)
 
 	os_tick_count++;
 
+	wakeup_tasks();
 
+	current_task->state = RUNNABLE;
 
-	bsp_led_toggle(LEDO);
+	current_task = get_highest_prio_task();
 
 	current_task->state = RUNNING;
 
 	pop_prg_stack();
 
-	asm("bx %[exc_ret]\n\t"
+	asm("bx %[exc_ret]"
 	    :: [exc_ret] "r" (0xFFFFFFFD));
 }
 
@@ -276,6 +284,8 @@ void os_init(void)
 	os_init_task(&idle_task, (uint8_t *)"idle", idle_task_stack, 128, 0xf,
 			__os_idle_task, NULL);
 
+	current_task = &idle_task;
+
 	STAILQ_INSERT_HEAD(&task_groups[IDLE_TASK_PRIO], &idle_task, tq_el);
 }
 
@@ -291,7 +301,7 @@ void os_start_tasks(void)
 
 	current_task->stack += 16;
 
-	asm("mov r0, %[task]\n\t"
+	asm volatile ("mov r0, %[task]\n\t"
 	    "msr psp, %[stack]\n\t"
 	    "mov r1, #2\n\t"
 	    "msr control, r1\n\t"
@@ -300,5 +310,5 @@ void os_start_tasks(void)
 	    :: [runner] "r" (__os_task_runner),
 	       [task] "r" (current_task),
 	       [stack] "r" (current_task->stack)
-	    : "cc", "memory");
+	    : "r0", "r1", "cc", "memory");
 }
