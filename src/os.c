@@ -22,12 +22,16 @@
 #define IDLE_TASK_PRIO 0xF
 
 
-STAILQ_HEAD(tcb_queue, tcb);
-static struct tcb_queue task_groups[NUM_PRIO_GROUPS];
-static uint8_t highest_prio_group;
+struct task_group {
+	struct tcb *first;
+	struct tcb *last;
+};
 
-SLIST_HEAD(tcb_list, tcb);
-static struct tcb_list delayed_tasks = SLIST_HEAD_INITIALIZER(delayed_tasks);
+static struct task_group task_groups[NUM_PRIO_GROUPS];
+static uint8_t highest_prio_group = 0;
+
+
+static struct tcb *delayed_tasks = NULL;
 
 static struct tcb *current_task = NULL;
 
@@ -98,10 +102,10 @@ static inline void pop_prg_stack(void)
 	     : "cc");
 }
 
-__attribute__((always_inline))
-static inline void wakeup_tasks(void)
+//__attribute__((always_inline))
+static void wakeup_tasks(void)
 {
-	struct tcb *task = SLIST_FIRST(&delayed_tasks);
+	struct tcb *task = delayed_tasks;
 
 	while (task != NULL) {
 		if (task->wakeup_time > os_tick_count) {
@@ -113,47 +117,52 @@ static inline void wakeup_tasks(void)
 			highest_prio_group = task->priority;
 		}
 
-		SLIST_REMOVE_HEAD(&delayed_tasks, dtl_el);
-		task = SLIST_FIRST(&delayed_tasks);
+		delayed_tasks = task->next_delayed_task;
+		task->next_delayed_task = NULL;
+		task = delayed_tasks;
 	}
 }
 
-__attribute__((always_inline))
-static inline struct tcb *get_highest_prio_task(void)
+//__attribute__((always_inline))
+static struct tcb *get_highest_prio_task(void)
 {
+	task_groups[current_task->priority].first = current_task->next_task;
 
-	STAILQ_REMOVE_HEAD(&task_groups[current_task->priority], tq_el);
+	if (task_groups[current_task->priority].last != NULL) {
+		task_groups[current_task->priority].last->next_task = current_task;
+	}
 
-	STAILQ_INSERT_TAIL(&task_groups[current_task->priority], current_task, tq_el);
-
+	task_groups[current_task->priority].last = current_task;
+	current_task->next_task = NULL;
 
 	for (uint8_t i = highest_prio_group; i < NUM_PRIO_GROUPS; i++) {
 		highest_prio_group = i;
-		struct tcb *task = STAILQ_FIRST(&task_groups[i]);
+		struct tcb *task = task_groups[i].first;
 
 		while (task != NULL) {
 			if (task->state == RUNNABLE) {
 				return task;
 			}
 
-			task = STAILQ_NEXT(task, tq_el);
+			task = task->next_task;
 		}
 	}
 
 	// if we got here, something went very wrong
-	// force an NMI (blocking handler);
-	SCB_ICSR |= (uint32_t) SCB_ICSR_NMIPENDSET;
+	while (true);
 	return NULL;
 }
 
-
+__attribute__((naked))
 void pend_sv_handler(void)
 {
 	push_prg_stack();
 
 	SCB_ICSR |= SCB_ICSR_PENDSVCLR;
 
-	current_task->state = RUNNABLE;
+	if (current_task->state == RUNNING) {
+		current_task->state = RUNNABLE;
+	}
 
 	current_task = get_highest_prio_task();
 
@@ -165,6 +174,7 @@ void pend_sv_handler(void)
 	    :: [exc_ret] "r" (0xFFFFFFFD));
 }
 
+__attribute__((naked))
 void sys_tick_handler(void)
 {
 	push_prg_stack();
@@ -175,7 +185,28 @@ void sys_tick_handler(void)
 
 	current_task->state = RUNNABLE;
 
+	comm_send_num_u(os_tick_count);
+	comm_send_str((uint8_t *)": ");
+	comm_send_str(current_task->name);
+
 	current_task = get_highest_prio_task();
+
+	comm_send_str((uint8_t *)" -> ");
+	comm_send_str(current_task->name);
+
+
+	uint32_t psp, msp;
+	asm("mrs %[psp], psp\n\t"
+	    "mrs %[msp], msp"
+	    :: [psp] "r" (psp), [msp] "r" (msp));
+
+	comm_send_str((uint8_t *)" PSP: ");
+	comm_send_num_u(psp);
+
+	comm_send_str((uint8_t *)" MSP: ");
+	comm_send_num_u(msp);
+
+	comm_send_str((uint8_t *)"\r\n");
 
 	current_task->state = RUNNING;
 
@@ -190,7 +221,7 @@ void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 		uint32_t stack_size, uint8_t priority,
 		void (*task_func)(void *), void *task_params)
 {
-	if (priority > 0xf ||
+	if (priority > IDLE_TASK_PRIO ||
 	    stack_size < 64) {
 		return;
 	}
@@ -199,6 +230,9 @@ void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 	CM_ATOMIC_BLOCK() {
 		task->id = task_id++;
 	}
+
+	task->next_task = NULL;
+	task->next_delayed_task = NULL;
 
 	task->priority = priority;
 	task->task_func = task_func;
@@ -227,7 +261,16 @@ void os_add_task(task_t *new_task)
 {
 	CM_ATOMIC_CONTEXT();
 
-	STAILQ_INSERT_TAIL(&task_groups[new_task->priority], new_task, tq_el);
+	if (task_groups[new_task->priority].first == NULL) {
+		task_groups[new_task->priority].first = new_task;
+	} else {
+		task_groups[new_task->priority].last->next_task = new_task;
+	}
+
+	task_groups[new_task->priority].last = new_task;
+
+	new_task->next_task = NULL;
+
 }
 
 void os_yield(void)
@@ -241,25 +284,24 @@ void os_task_delay(uint32_t ticks)
 
 	current_task->wakeup_time = os_tick_count + ticks;
 
-	struct tcb *delayed_task = SLIST_FIRST(&delayed_tasks);
+	struct tcb *delayed_task = delayed_tasks;
 
 	if ((delayed_task == NULL) ||
 	    (delayed_task->wakeup_time > current_task->wakeup_time) ||
 	    (delayed_task->wakeup_time == current_task->wakeup_time &&
 	     delayed_task->priority > current_task->priority)) {
 
-		SLIST_INSERT_HEAD(&delayed_tasks, current_task, dtl_el);
+		delayed_tasks = current_task;
 	} else {
-
 		while (delayed_task != NULL) {
-			struct tcb *next = SLIST_NEXT(delayed_task, dtl_el);
+			struct tcb *next = delayed_task->next_delayed_task;
 
 			if ((next == NULL) ||
 			    (next->wakeup_time > current_task->wakeup_time) ||
 			    (next->wakeup_time == current_task->wakeup_time &&
 			     next->priority > current_task->priority)) {
 
-				SLIST_INSERT_AFTER(delayed_task, current_task, dtl_el);
+				delayed_task->next_delayed_task = next;
 
 				break;
 			}
@@ -268,6 +310,7 @@ void os_task_delay(uint32_t ticks)
 		}
 	}
 
+	current_task->next_delayed_task = NULL;
 	current_task->state = DELAYED;
 
 	os_yield();
@@ -278,15 +321,16 @@ void os_init(void)
 	CM_ATOMIC_CONTEXT();
 
 	for (uint8_t i = 0; i < NUM_PRIO_GROUPS; i++) {
-		task_groups[i] = (struct tcb_queue) STAILQ_HEAD_INITIALIZER(task_groups[i]);
+		task_groups[i].first = NULL;
+		task_groups[i].last = NULL;
 	}
 
-	os_init_task(&idle_task, (uint8_t *)"idle", idle_task_stack, 128, 0xf,
+	os_init_task(&idle_task, (uint8_t *)"idle", idle_task_stack, 128, IDLE_TASK_PRIO,
 			__os_idle_task, NULL);
 
 	current_task = &idle_task;
 
-	STAILQ_INSERT_HEAD(&task_groups[IDLE_TASK_PRIO], &idle_task, tq_el);
+	os_add_task(&idle_task);
 }
 
 void os_start_tasks(void)

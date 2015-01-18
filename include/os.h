@@ -23,8 +23,8 @@
 
 
 typedef struct tcb {
-	STAILQ_ENTRY(tcb) tq_el;
-	SLIST_ENTRY(tcb) dtl_el;
+	struct tcb *next_task;
+	struct tcb *next_delayed_task;
 
 	uint8_t id;
 	const uint8_t *name;
