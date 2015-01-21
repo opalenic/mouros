@@ -64,7 +64,20 @@ static void __os_blocking_handler(void)
 static void __os_task_runner(struct tcb *task)
 {
 	task->task_func(task->task_params);
-	task->state = STOPPED;
+
+	CM_ATOMIC_BLOCK() {
+		task->state = STOPPED;
+
+		// Remove task from runnable queue
+		uint8_t prio = task->priority;
+		if (task_groups[prio].first == task_groups[prio].last) {
+			task_groups[prio].first = NULL;
+			task_groups[prio].last = NULL;
+		} else {
+			task_groups[prio].first = current_task->next_task;
+		}
+	}
+
 	os_yield();
 }
 
@@ -72,6 +85,8 @@ static void __os_task_runner(struct tcb *task)
 __attribute__((always_inline))
 static inline void push_prg_stack(void)
 {
+	register int *new_psp asm("r0");
+
 	asm ("mrs %[new_sp], psp\n\t"
 	     "sub %[new_sp], #32\n\t"
 	     "mov r1, %[new_sp]\n\t"
@@ -81,14 +96,17 @@ static inline void push_prg_stack(void)
 	     "mov r6, r10\n\t"
 	     "mov r7, r11\n\t"
 	     "stm r1!, {r4-r7}"
-	     : [new_sp] "=r" (current_task->stack)
+	     : [new_sp] "=r" (new_psp)
 	     :: "cc", "memory");
 
+	current_task->stack = new_psp;
 }
 
 __attribute__((always_inline))
 static inline void pop_prg_stack(void)
 {
+	register int *old_psp asm("r0") = current_task->stack;
+
 	asm ("mov r2, #16\n\t"
 	     "add r1, %[old_sp], r2\n\t"
 	     "ldm r1!, {r4-r7}\n\t"
@@ -98,7 +116,7 @@ static inline void pop_prg_stack(void)
 	     "mov r11, r7\n\t"
 	     "ldm %[old_sp]!, {r4-r7}\n\t"
 	     "msr psp, r1"
-	     :: [old_sp] "r" (current_task->stack)
+	     :: [old_sp] "r" (old_psp)
 	     : "cc");
 }
 
@@ -119,32 +137,40 @@ static void wakeup_tasks(void)
 
 		delayed_tasks = task->next_delayed_task;
 		task->next_delayed_task = NULL;
+
+		task->next_task = task_groups[task->priority].first;
+		task_groups[task->priority].first = task;
+
 		task = delayed_tasks;
 	}
 }
 
 //__attribute__((always_inline))
-static struct tcb *get_highest_prio_task(void)
+static inline void rotate_tasks(uint8_t prio)
 {
-	task_groups[current_task->priority].first = current_task->next_task;
-
-	if (task_groups[current_task->priority].last != NULL) {
-		task_groups[current_task->priority].last->next_task = current_task;
+	// don't do anything if the queue only has one member
+	if (task_groups[prio].first == task_groups[prio].last) {
+		return;
 	}
 
-	task_groups[current_task->priority].last = current_task;
-	current_task->next_task = NULL;
+	struct tcb *first = task_groups[prio].first;
 
+	task_groups[prio].first = first->next_task;
+	task_groups[prio].last->next_task = first;
+
+	task_groups[prio].last = first;
+	first->next_task = NULL;
+}
+
+//__attribute__((always_inline))
+static struct tcb *get_highest_prio_task(void)
+{
 	for (uint8_t i = highest_prio_group; i < NUM_PRIO_GROUPS; i++) {
 		highest_prio_group = i;
 		struct tcb *task = task_groups[i].first;
 
-		while (task != NULL) {
-			if (task->state == RUNNABLE) {
-				return task;
-			}
-
-			task = task->next_task;
+		if (task != NULL) {
+			return task;
 		}
 	}
 
@@ -162,6 +188,7 @@ void pend_sv_handler(void)
 
 	if (current_task->state == RUNNING) {
 		current_task->state = RUNNABLE;
+		rotate_tasks(current_task->priority);
 	}
 
 	current_task = get_highest_prio_task();
@@ -180,6 +207,8 @@ void sys_tick_handler(void)
 	push_prg_stack();
 
 	os_tick_count++;
+
+	rotate_tasks(current_task->priority);
 
 	wakeup_tasks();
 
@@ -271,6 +300,10 @@ void os_add_task(task_t *new_task)
 
 	new_task->next_task = NULL;
 
+	if (new_task->priority < highest_prio_group) {
+		highest_prio_group = new_task->priority;
+	}
+
 }
 
 void os_yield(void)
@@ -283,25 +316,26 @@ void os_task_delay(uint32_t ticks)
 	CM_ATOMIC_CONTEXT();
 
 	current_task->wakeup_time = os_tick_count + ticks;
+	current_task->state = DELAYED;
 
 	struct tcb *delayed_task = delayed_tasks;
 
-	if ((delayed_task == NULL) ||
-	    (delayed_task->wakeup_time > current_task->wakeup_time) ||
-	    (delayed_task->wakeup_time == current_task->wakeup_time &&
-	     delayed_task->priority > current_task->priority)) {
-
+	if (delayed_task == NULL) {
 		delayed_tasks = current_task;
+		current_task->next_delayed_task = NULL;
+
+	} else if (delayed_task->wakeup_time >= current_task->wakeup_time) {
+		delayed_tasks = current_task;
+		current_task->next_delayed_task = delayed_task;
+
 	} else {
 		while (delayed_task != NULL) {
 			struct tcb *next = delayed_task->next_delayed_task;
 
-			if ((next == NULL) ||
-			    (next->wakeup_time > current_task->wakeup_time) ||
-			    (next->wakeup_time == current_task->wakeup_time &&
-			     next->priority > current_task->priority)) {
-
-				delayed_task->next_delayed_task = next;
+			if (next == NULL ||
+			    next->wakeup_time >= current_task->wakeup_time) {
+				delayed_task->next_delayed_task = current_task;
+				current_task->next_delayed_task = next;
 
 				break;
 			}
@@ -310,8 +344,15 @@ void os_task_delay(uint32_t ticks)
 		}
 	}
 
-	current_task->next_delayed_task = NULL;
-	current_task->state = DELAYED;
+	uint8_t prio = current_task->priority;
+	if (task_groups[prio].first == task_groups[prio].last) {
+
+		task_groups[prio].first = NULL;
+		task_groups[prio].last = NULL;
+
+	} else {
+		task_groups[prio].first = current_task->next_task;
+	}
 
 	os_yield();
 }
@@ -335,13 +376,11 @@ void os_init(void)
 
 void os_start_tasks(void)
 {
-        systick_set_frequency(1, rcc_ahb_frequency);
+        systick_set_frequency(10, rcc_ahb_frequency);
         systick_interrupt_enable();
         systick_counter_enable();
 
         current_task = get_highest_prio_task();
-
-        highest_prio_group = current_task->priority;
 
 	current_task->stack += 16;
 
