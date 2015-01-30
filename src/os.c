@@ -307,7 +307,7 @@ void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 	task->priority = priority;
 	task->task_func = task_func;
 	task->task_params = task_params;
-	task->state = RUNNABLE;
+	task->state = STOPPED;
 
 	task->name = name;
 	task->stack_base = (int *)stack_base;
@@ -330,6 +330,12 @@ void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 void os_add_task(task_t *new_task)
 {
 	CM_ATOMIC_CONTEXT();
+
+	if (new_task->state != STOPPED) {
+		return;
+	}
+
+	new_task->state = RUNNABLE;
 
 	if (all_tasks.first == NULL) {
 		all_tasks.first = new_task;
