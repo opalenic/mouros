@@ -24,7 +24,7 @@
 
 typedef struct tcb {
 	struct tcb *next_task;
-	struct tcb *next_delayed_task;
+	struct tcb *next_wd_task;
 
 	uint8_t id;
 	const uint8_t *name;
@@ -37,6 +37,8 @@ typedef struct tcb {
 	enum {
 		RUNNABLE = 0,
 		DELAYED,
+		WAITING_FOR_RESOURCE,
+		SLEEPING,
 		RUNNING,
 		STOPPED
 	} state;
@@ -49,11 +51,23 @@ typedef struct tcb {
 } task_t;
 
 
+typedef struct resource {
+	struct tcb *first_waiting;
+	bool is_available;
+} resource_t;
+
+
 void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 		uint32_t stack_size, uint8_t priority,
 		void (*task_func)(void *), void *task_params);
 
 void os_task_delay(uint32_t ticks);
+
+void os_task_sleep(void);
+bool os_task_wakeup(task_t *task);
+
+void os_acquire_resource(resource_t *res);
+void os_release_resource(resource_t *res);
 
 void os_add_task(task_t *task);
 void os_yield(void);

@@ -126,8 +126,8 @@ static void wakeup_tasks(void)
 			highest_prio_group = task->priority;
 		}
 
-		delayed_tasks = task->next_delayed_task;
-		task->next_delayed_task = NULL;
+		delayed_tasks = task->next_wd_task;
+		task->next_wd_task = NULL;
 
 		task->next_task = task_groups[task->priority].first;
 		task_groups[task->priority].first = task;
@@ -257,7 +257,7 @@ void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 	}
 
 	task->next_task = NULL;
-	task->next_delayed_task = NULL;
+	task->next_wd_task = NULL;
 
 	task->priority = priority;
 	task->task_func = task_func;
@@ -318,20 +318,20 @@ void os_task_delay(uint32_t ticks)
 
 	if (delayed_task == NULL) {
 		delayed_tasks = current_task;
-		current_task->next_delayed_task = NULL;
+		current_task->next_wd_task = NULL;
 
 	} else if (delayed_task->wakeup_time >= current_task->wakeup_time) {
 		delayed_tasks = current_task;
-		current_task->next_delayed_task = delayed_task;
+		current_task->next_wd_task = delayed_task;
 
 	} else {
 		while (delayed_task != NULL) {
-			struct tcb *next = delayed_task->next_delayed_task;
+			struct tcb *next = delayed_task->next_wd_task;
 
 			if (next == NULL ||
 			    next->wakeup_time >= current_task->wakeup_time) {
-				delayed_task->next_delayed_task = current_task;
-				current_task->next_delayed_task = next;
+				delayed_task->next_wd_task = current_task;
+				current_task->next_wd_task = next;
 
 				break;
 			}
@@ -341,6 +341,109 @@ void os_task_delay(uint32_t ticks)
 	}
 
 	os_yield();
+}
+
+
+void os_task_sleep(void)
+{
+	CM_ATOMIC_CONTEXT();
+
+	current_task->state = SLEEPING;
+
+	os_yield();
+}
+
+
+bool os_task_wakeup(task_t *task)
+{
+	CM_ATOMIC_CONTEXT();
+
+	if (task->state != SLEEPING) {
+		return false;
+	}
+
+	task->state = RUNNABLE;
+
+	return_task_to_runqueue(task);
+
+	if (current_task->priority > task->priority) {
+		os_yield();
+	}
+
+	return true;
+}
+
+
+static void insert_waiting_task(struct resource *res) {
+
+	struct tcb *task = res->first_waiting;
+
+	if (task == NULL) {
+		res->first_waiting = current_task;
+		current_task->next_wd_task = NULL;
+
+	} else if (task->priority > current_task->priority) {
+
+		res->first_waiting = current_task;
+		current_task->next_wd_task = task;
+
+	} else {
+		while (task != NULL) {
+			struct tcb *next = task->next_wd_task;
+
+			if (next == NULL ||
+					next->priority > current_task->priority) {
+
+				task->next_wd_task = current_task;
+				current_task->next_wd_task = next;
+
+				break;
+			}
+
+			task = next;
+		}
+	}
+}
+
+void os_acquire_resource(resource_t *res)
+{
+	while (true) {
+		CM_ATOMIC_BLOCK() {
+			if (res->is_available) {
+				res->is_available = false;
+				return;
+			} else {
+				current_task->state = WAITING_FOR_RESOURCE;
+
+				insert_waiting_task(res);
+			}
+
+			os_yield();
+		}
+	}
+}
+
+
+void os_release_resource(resource_t *res)
+{
+	CM_ATOMIC_CONTEXT();
+
+	res->is_available = true;
+
+	struct tcb *first = res->first_waiting;
+
+	if (first != NULL) {
+		res->first_waiting = first->next_wd_task;
+
+		first->next_wd_task = NULL;
+		first->state = RUNNABLE;
+
+		if (first->priority > highest_prio_group) {
+			highest_prio_group = first->priority;
+		}
+
+		return_task_to_runqueue(first);
+	}
 }
 
 
@@ -363,9 +466,19 @@ void os_init(void)
 
 void os_start_tasks(void)
 {
-        systick_set_frequency(10, rcc_ahb_frequency);
-        systick_interrupt_enable();
-        systick_counter_enable();
+	systick_set_frequency(10, rcc_ahb_frequency);
+
+	// Systick priority needs to be set to lowest, so that a systick
+	// interrupt arriving during the processing of an isr doesn't save
+	// the context of the isr instead of the task in which the isr interrupt
+	// happened.
+	nvic_set_priority(NVIC_SYSTICK_IRQ, 0xff);
+
+	// Same as above. This allows for calling os_yield() in isrs.
+	nvic_set_priority(NVIC_PENDSV_IRQ, 0xff);
+
+	systick_interrupt_enable();
+	systick_counter_enable();
 
 	current_task = get_task_from_runqueue();
 
