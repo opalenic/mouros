@@ -9,7 +9,7 @@
 #define OS_H_
 
 #include <stdint.h>
-#include <sys/queue.h>
+
 
 #define __os_init_task_with_stack(task, name, stack_size, stack_id, priority, task_func, task_params) \
 	uint8_t stack_##stack_id[(stack_size)]; \
@@ -22,7 +22,11 @@
 	__os_init_task_with_stack_int((task), (name), (stack_size), __COUNTER__, (priority), (task_func), (task_params))
 
 
+
 typedef struct tcb {
+	struct tcb *tl_prev;
+	struct tcb *tl_next;
+
 	struct tcb *next_task;
 
 	uint8_t id;
@@ -69,6 +73,7 @@ void os_acquire_resource(resource_t *res);
 void os_release_resource(resource_t *res);
 
 void os_add_task(task_t *task);
+
 void os_yield(void);
 void os_init(void);
 void os_start_tasks(void);

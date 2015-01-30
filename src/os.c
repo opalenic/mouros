@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include <libopencm3/cm3/cortex.h>
 #include <libopencm3/cm3/systick.h>
@@ -30,6 +31,10 @@ struct task_group {
 static struct task_group task_groups[NUM_PRIO_GROUPS];
 static uint8_t highest_prio_group = 0;
 
+static struct task_group all_tasks = {
+		.first = NULL,
+		.last = NULL
+};
 
 static struct tcb *delayed_tasks = NULL;
 
@@ -63,9 +68,32 @@ static void __os_blocking_handler(void)
 
 static void __os_task_runner(struct tcb *task)
 {
+
 	task->task_func(task->task_params);
 
 	CM_ATOMIC_BLOCK() {
+		struct tcb *prev = task->tl_prev;
+		struct tcb *next = task->tl_next;
+
+		if (next == NULL) {
+			all_tasks.last = prev;
+		}
+
+		if (prev == NULL) {
+			all_tasks.first = next;
+		}
+
+		if (next != NULL) {
+			next->tl_prev = prev;
+		}
+
+		if (prev != NULL) {
+			prev->tl_next = next;
+		}
+
+		task->tl_next = NULL;
+		task->tl_prev = NULL;
+
 		task->state = STOPPED;
 
 		os_yield();
@@ -303,26 +331,32 @@ void os_add_task(task_t *new_task)
 {
 	CM_ATOMIC_CONTEXT();
 
-	new_task->next_task = NULL;
-
-	if (task_groups[new_task->priority].first == NULL) {
-		task_groups[new_task->priority].first = new_task;
+	if (all_tasks.first == NULL) {
+		all_tasks.first = new_task;
+		all_tasks.last = new_task;
 	} else {
-		task_groups[new_task->priority].last->next_task = new_task;
+		all_tasks.last->tl_next = new_task;
+		all_tasks.last = new_task;
 	}
 
-	task_groups[new_task->priority].last = new_task;
+	new_task->tl_next = NULL;
+
+
+	return_task_to_runqueue_tail(new_task);
 
 	if (new_task->priority < highest_prio_group) {
 		highest_prio_group = new_task->priority;
 	}
 
+
 }
+
 
 void os_yield(void)
 {
 	SCB_ICSR |= SCB_ICSR_PENDSVSET;
 }
+
 
 void os_task_delay(uint32_t ticks)
 {
@@ -459,7 +493,7 @@ void os_release_resource(resource_t *res)
 			highest_prio_group = first->priority;
 		}
 
-		return_task_to_runqueue_tail(first);
+		return_task_to_runqueue_head(first);
 	}
 }
 
