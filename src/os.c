@@ -68,17 +68,8 @@ static void __os_task_runner(struct tcb *task)
 	CM_ATOMIC_BLOCK() {
 		task->state = STOPPED;
 
-		// Remove task from runnable queue
-		uint8_t prio = task->priority;
-		if (task_groups[prio].first == task_groups[prio].last) {
-			task_groups[prio].first = NULL;
-			task_groups[prio].last = NULL;
-		} else {
-			task_groups[prio].first = current_task->next_task;
-		}
+		os_yield();
 	}
-
-	os_yield();
 }
 
 
@@ -146,30 +137,35 @@ static void wakeup_tasks(void)
 }
 
 //__attribute__((always_inline))
-static inline void rotate_tasks(uint8_t prio)
+static inline void return_task_to_runqueue(struct tcb *task)
 {
+	uint8_t prio = task->priority;
 	// don't do anything if the queue only has one member
-	if (task_groups[prio].first == task_groups[prio].last) {
-		return;
+	if (task_groups[prio].first == NULL) {
+		task_groups[prio].first = task;
+		task_groups[prio].last = task;
+
+	} else {
+		task_groups[prio].last->next_task = task;
+		task_groups[prio].last = task;
 	}
 
-	struct tcb *first = task_groups[prio].first;
-
-	task_groups[prio].first = first->next_task;
-	task_groups[prio].last->next_task = first;
-
-	task_groups[prio].last = first;
-	first->next_task = NULL;
+	task->next_task = NULL;
 }
 
 //__attribute__((always_inline))
-static struct tcb *get_highest_prio_task(void)
+static struct tcb *get_task_from_runqueue(void)
 {
 	for (uint8_t i = highest_prio_group; i < NUM_PRIO_GROUPS; i++) {
 		highest_prio_group = i;
 		struct tcb *task = task_groups[i].first;
 
 		if (task != NULL) {
+			task_groups[i].first = task->next_task;
+			if (task->next_task == NULL) {
+				task_groups[i].last = NULL;
+			}
+
 			return task;
 		}
 	}
@@ -188,10 +184,10 @@ void pend_sv_handler(void)
 
 	if (current_task->state == RUNNING) {
 		current_task->state = RUNNABLE;
-		rotate_tasks(current_task->priority);
+		return_task_to_runqueue(current_task);
 	}
 
-	current_task = get_highest_prio_task();
+	current_task = get_task_from_runqueue();
 
 	current_task->state = RUNNING;
 
@@ -208,7 +204,7 @@ void sys_tick_handler(void)
 
 	os_tick_count++;
 
-	rotate_tasks(current_task->priority);
+	return_task_to_runqueue(current_task);
 
 	wakeup_tasks();
 
@@ -218,7 +214,7 @@ void sys_tick_handler(void)
 	comm_send_str((uint8_t *)": ");
 	comm_send_str(current_task->name);
 
-	current_task = get_highest_prio_task();
+	current_task = get_task_from_runqueue();
 
 	comm_send_str((uint8_t *)" -> ");
 	comm_send_str(current_task->name);
@@ -290,6 +286,8 @@ void os_add_task(task_t *new_task)
 {
 	CM_ATOMIC_CONTEXT();
 
+	new_task->next_task = NULL;
+
 	if (task_groups[new_task->priority].first == NULL) {
 		task_groups[new_task->priority].first = new_task;
 	} else {
@@ -297,8 +295,6 @@ void os_add_task(task_t *new_task)
 	}
 
 	task_groups[new_task->priority].last = new_task;
-
-	new_task->next_task = NULL;
 
 	if (new_task->priority < highest_prio_group) {
 		highest_prio_group = new_task->priority;
@@ -344,18 +340,9 @@ void os_task_delay(uint32_t ticks)
 		}
 	}
 
-	uint8_t prio = current_task->priority;
-	if (task_groups[prio].first == task_groups[prio].last) {
-
-		task_groups[prio].first = NULL;
-		task_groups[prio].last = NULL;
-
-	} else {
-		task_groups[prio].first = current_task->next_task;
-	}
-
 	os_yield();
 }
+
 
 void os_init(void)
 {
@@ -380,7 +367,7 @@ void os_start_tasks(void)
         systick_interrupt_enable();
         systick_counter_enable();
 
-        current_task = get_highest_prio_task();
+	current_task = get_task_from_runqueue();
 
 	current_task->stack += 16;
 
