@@ -24,7 +24,6 @@
 
 typedef struct tcb {
 	struct tcb *next_task;
-	struct tcb *next_wd_task;
 
 	uint8_t id;
 	const uint8_t *name;

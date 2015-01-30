@@ -111,33 +111,25 @@ static inline void pop_prg_stack(void)
 	     : "cc");
 }
 
+
 //__attribute__((always_inline))
-static void wakeup_tasks(void)
+static inline void return_task_to_runqueue_head(struct tcb *task)
 {
-	struct tcb *task = delayed_tasks;
+	uint8_t prio = task->priority;
+	// don't do anything if the queue only has one member
+	if (task_groups[prio].first == NULL) {
+		task_groups[prio].first = task;
+		task_groups[prio].last = task;
 
-	while (task != NULL) {
-		if (task->wakeup_time > os_tick_count) {
-			return;
-		}
-
-		task->state = RUNNABLE;
-		if (task->priority < highest_prio_group) {
-			highest_prio_group = task->priority;
-		}
-
-		delayed_tasks = task->next_wd_task;
-		task->next_wd_task = NULL;
-
-		task->next_task = task_groups[task->priority].first;
-		task_groups[task->priority].first = task;
-
-		task = delayed_tasks;
+	} else {
+		task->next_task = task_groups[prio].first;
+		task_groups[prio].first = task;
 	}
 }
 
+
 //__attribute__((always_inline))
-static inline void return_task_to_runqueue(struct tcb *task)
+static inline void return_task_to_runqueue_tail(struct tcb *task)
 {
 	uint8_t prio = task->priority;
 	// don't do anything if the queue only has one member
@@ -175,6 +167,32 @@ static struct tcb *get_task_from_runqueue(void)
 	return NULL;
 }
 
+
+//__attribute__((always_inline))
+static void wakeup_tasks(void)
+{
+	struct tcb *task = delayed_tasks;
+
+	while (task != NULL) {
+		if (task->wakeup_time > os_tick_count) {
+			return;
+		}
+
+		task->state = RUNNABLE;
+		if (task->priority < highest_prio_group) {
+			highest_prio_group = task->priority;
+		}
+
+		delayed_tasks = task->next_task;
+		task->next_task = NULL;
+
+		return_task_to_runqueue_head(task);
+
+		task = delayed_tasks;
+	}
+}
+
+
 __attribute__((naked))
 void pend_sv_handler(void)
 {
@@ -184,7 +202,7 @@ void pend_sv_handler(void)
 
 	if (current_task->state == RUNNING) {
 		current_task->state = RUNNABLE;
-		return_task_to_runqueue(current_task);
+		return_task_to_runqueue_tail(current_task);
 	}
 
 	current_task = get_task_from_runqueue();
@@ -204,7 +222,7 @@ void sys_tick_handler(void)
 
 	os_tick_count++;
 
-	return_task_to_runqueue(current_task);
+	return_task_to_runqueue_tail(current_task);
 
 	wakeup_tasks();
 
@@ -257,7 +275,6 @@ void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 	}
 
 	task->next_task = NULL;
-	task->next_wd_task = NULL;
 
 	task->priority = priority;
 	task->task_func = task_func;
@@ -318,20 +335,20 @@ void os_task_delay(uint32_t ticks)
 
 	if (delayed_task == NULL) {
 		delayed_tasks = current_task;
-		current_task->next_wd_task = NULL;
+		current_task->next_task = NULL;
 
 	} else if (delayed_task->wakeup_time >= current_task->wakeup_time) {
 		delayed_tasks = current_task;
-		current_task->next_wd_task = delayed_task;
+		current_task->next_task = delayed_task;
 
 	} else {
 		while (delayed_task != NULL) {
-			struct tcb *next = delayed_task->next_wd_task;
+			struct tcb *next = delayed_task->next_task;
 
 			if (next == NULL ||
 			    next->wakeup_time >= current_task->wakeup_time) {
-				delayed_task->next_wd_task = current_task;
-				current_task->next_wd_task = next;
+				delayed_task->next_task = current_task;
+				current_task->next_task = next;
 
 				break;
 			}
@@ -364,7 +381,7 @@ bool os_task_wakeup(task_t *task)
 
 	task->state = RUNNABLE;
 
-	return_task_to_runqueue(task);
+	return_task_to_runqueue_tail(task);
 
 	if (current_task->priority > task->priority) {
 		os_yield();
@@ -380,22 +397,22 @@ static void insert_waiting_task(struct resource *res) {
 
 	if (task == NULL) {
 		res->first_waiting = current_task;
-		current_task->next_wd_task = NULL;
+		current_task->next_task = NULL;
 
 	} else if (task->priority > current_task->priority) {
 
 		res->first_waiting = current_task;
-		current_task->next_wd_task = task;
+		current_task->next_task = task;
 
 	} else {
 		while (task != NULL) {
-			struct tcb *next = task->next_wd_task;
+			struct tcb *next = task->next_task;
 
 			if (next == NULL ||
 					next->priority > current_task->priority) {
 
-				task->next_wd_task = current_task;
-				current_task->next_wd_task = next;
+				task->next_task = current_task;
+				current_task->next_task = next;
 
 				break;
 			}
@@ -433,16 +450,16 @@ void os_release_resource(resource_t *res)
 	struct tcb *first = res->first_waiting;
 
 	if (first != NULL) {
-		res->first_waiting = first->next_wd_task;
+		res->first_waiting = first->next_task;
 
-		first->next_wd_task = NULL;
+		first->next_task = NULL;
 		first->state = RUNNABLE;
 
 		if (first->priority > highest_prio_group) {
 			highest_prio_group = first->priority;
 		}
 
-		return_task_to_runqueue(first);
+		return_task_to_runqueue_tail(first);
 	}
 }
 
