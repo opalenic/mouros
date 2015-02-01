@@ -21,7 +21,7 @@
 #define os_init_task_with_stack(task, name, stack_size, priority, task_func, task_params) \
 	__os_init_task_with_stack_int((task), (name), (stack_size), __COUNTER__, (priority), (task_func), (task_params))
 
-
+#define OS_RESOURCE_INITIALIZER {NULL, NULL}
 
 typedef struct tcb {
 	struct tcb *tl_prev;
@@ -56,7 +56,7 @@ typedef struct tcb {
 
 typedef struct resource {
 	struct tcb *first_waiting;
-	bool is_available;
+	struct tcb *acquired_by;
 } resource_t;
 
 
@@ -79,6 +79,7 @@ void os_init(void);
 void os_start_tasks(void);
 
 void os_list_tasks(void);
+void os_list_resource(resource_t *res);
 
 
 #endif /* OS_H_ */

@@ -455,16 +455,20 @@ void os_acquire_resource(resource_t *res)
 {
 	while (true) {
 		CM_ATOMIC_BLOCK() {
-			if (res->is_available) {
-				res->is_available = false;
+			if (res->acquired_by == NULL) {
+				res->acquired_by = current_task;
 				return;
+
+			} else if (res->acquired_by == current_task) {
+				return;
+
 			} else {
 				current_task->state = WAITING_FOR_RESOURCE;
 
 				insert_waiting_task(res);
-			}
 
-			os_yield();
+				os_yield();
+			}
 		}
 	}
 }
@@ -474,7 +478,7 @@ void os_release_resource(resource_t *res)
 {
 	CM_ATOMIC_CONTEXT();
 
-	res->is_available = true;
+	res->acquired_by = NULL;
 
 	struct tcb *first = res->first_waiting;
 
@@ -485,6 +489,11 @@ void os_release_resource(resource_t *res)
 		first->state = RUNNABLE;
 
 		return_task_to_runqueue_head(first);
+
+		if (current_task->priority > first->priority) {
+			os_yield();
+		}
+
 	}
 }
 
@@ -525,6 +534,30 @@ void os_list_tasks(void)
 		task = task->tl_next;
 	}
 }
+
+
+void os_list_resource(resource_t *res)
+{
+	comm_send_str("Resource:\r\n");
+
+	comm_send_str("\tstate: ");
+	comm_send_str(res->acquired_by == NULL ? "available" : "taken");
+	comm_send_str("\r\n");
+
+	comm_send_str("\t\tasks waiting: ");
+
+	struct tcb *task = res->first_waiting;
+
+	while (task != NULL) {
+		comm_send_str(task->name);
+		comm_send_str(" ");
+
+		task = task->next_task;
+	}
+
+	comm_send_str("\r\n");
+}
+
 
 
 void os_init(void)
