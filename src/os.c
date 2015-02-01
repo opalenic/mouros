@@ -16,7 +16,7 @@
 #include <libopencm3/stm32/rcc.h>
 
 #include <bsp.h>
-
+#include <comm.h>
 #include <os.h>
 
 #define NUM_PRIO_GROUPS 16
@@ -52,7 +52,7 @@ static task_t idle_task;
 static void __os_idle_task(void *params)
 {
 	while(true) {
-		for (uint32_t i = 0; i < 10000; i++) {
+		for (uint32_t i = 0; i < 100000; i++) {
 			asm("nop");
 		}
 		bsp_led_toggle(LEDO);
@@ -144,6 +144,11 @@ static inline void pop_prg_stack(void)
 static inline void return_task_to_runqueue_head(struct tcb *task)
 {
 	uint8_t prio = task->priority;
+
+	if (prio < highest_prio_group) {
+		highest_prio_group = prio;
+	}
+
 	// don't do anything if the queue only has one member
 	if (task_groups[prio].first == NULL) {
 		task_groups[prio].first = task;
@@ -160,6 +165,11 @@ static inline void return_task_to_runqueue_head(struct tcb *task)
 static inline void return_task_to_runqueue_tail(struct tcb *task)
 {
 	uint8_t prio = task->priority;
+
+	if (prio < highest_prio_group) {
+		highest_prio_group = prio;
+	}
+
 	// don't do anything if the queue only has one member
 	if (task_groups[prio].first == NULL) {
 		task_groups[prio].first = task;
@@ -206,14 +216,11 @@ static void wakeup_tasks(void)
 			return;
 		}
 
-		task->state = RUNNABLE;
-		if (task->priority < highest_prio_group) {
-			highest_prio_group = task->priority;
-		}
 
 		delayed_tasks = task->next_task;
 		task->next_task = NULL;
 
+		task->state = RUNNABLE;
 		return_task_to_runqueue_head(task);
 
 		task = delayed_tasks;
@@ -256,28 +263,7 @@ void sys_tick_handler(void)
 
 	current_task->state = RUNNABLE;
 
-	comm_send_num_u(os_tick_count);
-	comm_send_str((uint8_t *)": ");
-	comm_send_str(current_task->name);
-
 	current_task = get_task_from_runqueue();
-
-	comm_send_str((uint8_t *)" -> ");
-	comm_send_str(current_task->name);
-
-
-	uint32_t psp, msp;
-	asm("mrs %[psp], psp\n\t"
-	    "mrs %[msp], msp"
-	    :: [psp] "r" (psp), [msp] "r" (msp));
-
-	comm_send_str((uint8_t *)" PSP: ");
-	comm_send_num_u(psp);
-
-	comm_send_str((uint8_t *)" MSP: ");
-	comm_send_num_u(msp);
-
-	comm_send_str((uint8_t *)"\r\n");
 
 	current_task->state = RUNNING;
 
@@ -301,6 +287,9 @@ void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 	CM_ATOMIC_BLOCK() {
 		task->id = task_id++;
 	}
+
+	task->tl_next = NULL;
+	task->tl_prev = NULL;
 
 	task->next_task = NULL;
 
@@ -337,24 +326,24 @@ void os_add_task(task_t *new_task)
 
 	new_task->state = RUNNABLE;
 
+
 	if (all_tasks.first == NULL) {
 		all_tasks.first = new_task;
 		all_tasks.last = new_task;
+
+		new_task->tl_next = NULL;
+		new_task->tl_prev = NULL;
 	} else {
 		all_tasks.last->tl_next = new_task;
+
+		new_task->tl_prev = all_tasks.last;
+		new_task->tl_next = NULL;
+
 		all_tasks.last = new_task;
 	}
 
-	new_task->tl_next = NULL;
-
 
 	return_task_to_runqueue_tail(new_task);
-
-	if (new_task->priority < highest_prio_group) {
-		highest_prio_group = new_task->priority;
-	}
-
-
 }
 
 
@@ -495,11 +484,45 @@ void os_release_resource(resource_t *res)
 		first->next_task = NULL;
 		first->state = RUNNABLE;
 
-		if (first->priority > highest_prio_group) {
-			highest_prio_group = first->priority;
-		}
-
 		return_task_to_runqueue_head(first);
+	}
+}
+
+
+void os_list_tasks(void)
+{
+	uint8_t *state_lut[] = {
+		"RUNNABLE",
+		"DELAYED",
+		"WAITING_FOR_RESOURCE",
+		"SLEEPING",
+		"RUNNING",
+		"STOPPED"
+	};
+
+
+	struct tcb *task = all_tasks.first;
+
+	comm_send_str("All tasks:\r\n");
+
+	while (task != NULL) {
+		comm_send_str(task->name);
+		comm_send_str(":\r\n");
+
+		comm_send_str("\tstack: ");
+		comm_send_num_u(task->stack);
+		comm_send_str("\r\n");
+
+		comm_send_str("\tstate: ");
+		comm_send_str(state_lut[task->state]);
+		comm_send_str("\r\n");
+
+		comm_send_str("\tpriority: ");
+		comm_send_num_u(task->priority);
+		comm_send_str("\r\n");
+
+
+		task = task->tl_next;
 	}
 }
 
@@ -523,7 +546,7 @@ void os_init(void)
 
 void os_start_tasks(void)
 {
-	systick_set_frequency(10, rcc_ahb_frequency);
+	systick_set_frequency(5, rcc_ahb_frequency);
 
 	// Systick priority needs to be set to lowest, so that a systick
 	// interrupt arriving during the processing of an isr doesn't save

@@ -78,5 +78,7 @@ void os_yield(void);
 void os_init(void);
 void os_start_tasks(void);
 
+void os_list_tasks(void);
+
 
 #endif /* OS_H_ */
