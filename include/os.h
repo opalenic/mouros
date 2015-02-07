@@ -9,7 +9,7 @@
 #define OS_H_
 
 #include <stdint.h>
-
+#include <reent.h>
 
 #define __os_init_task_with_stack(task, name, stack_size, stack_id, priority, task_func, task_params) \
 	uint8_t stack_##stack_id[(stack_size)]; \
@@ -51,6 +51,8 @@ typedef struct tcb {
 	int *stack_base;
 	int *stack;
 	uint32_t stack_size;
+
+	struct _reent reent;
 } task_t;
 
 

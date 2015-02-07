@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <libopencm3/cm3/cortex.h>
 #include <libopencm3/cm3/systick.h>
@@ -241,6 +242,7 @@ void pend_sv_handler(void)
 	}
 
 	current_task = get_task_from_runqueue();
+	_impure_ptr = &current_task->reent;
 
 	current_task->state = RUNNING;
 
@@ -264,6 +266,7 @@ void sys_tick_handler(void)
 	current_task->state = RUNNABLE;
 
 	current_task = get_task_from_runqueue();
+	_impure_ptr = &current_task->reent;
 
 	current_task->state = RUNNING;
 
@@ -313,6 +316,9 @@ void os_init_task(task_t *task, const uint8_t *name, uint8_t *stack_base,
 	task->stack[13] = (int) __os_blocking_handler;
 	task->stack[14] = (int) __os_task_runner;
 	task->stack[15] = 1 << 24; // write to PSR (EPSR), set the Thumb bit
+
+
+	_REENT_INIT_PTR(&task->reent);
 }
 
 
