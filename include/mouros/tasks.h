@@ -14,15 +14,15 @@
 #include <reent.h>
 
 
-#define __os_task_init_with_stack(task, name, stack_size, stack_id, priority, task_func, task_params) \
-	uint8_t stack_##stack_id[(stack_size)]; \
-	os_task_init((task), (name), stack_##stack_id, (stack_size), (priority), (task_func), (task_params))
+#define ___os_task_init_with_stack(task, name, stack_size, priority, task_func, task_params, stack_num) \
+	uint8_t stack_##stack_num[stack_size]; \
+	os_task_init(task, name, stack_##stack_num, stack_size, priority, task_func, task_params)
 
-#define __os_task_init_with_stack_int(task, name, stack_size, stack_id, priority, task_func, task_params) \
-	__os_task_init_with_stack((task), (name), (stack_size), stack_id, (priority), (task_func), (task_params))
+#define __os_task_init_with_stack(task, name, stack_size, priority, task_func, task_params, stack_num) \
+	___os_task_init_with_stack(task, name, stack_size, priority, task_func, task_params, stack_num)
 
 #define os_task_init_with_stack(task, name, stack_size, priority, task_func, task_params) \
-	__os_task_init_with_stack_int((task), (name), (stack_size), __COUNTER__, (priority), (task_func), (task_params))
+	__os_task_init_with_stack((task), (name), (stack_size), (priority), (task_func), (task_params), __COUNTER__)
 
 
 typedef struct tcb {
