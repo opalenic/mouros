@@ -129,10 +129,10 @@ void sched_add_runqueue_tail(struct tcb* task)
 	task->next_task = NULL;
 }
 
-__attribute__((naked))
+__attribute__((naked, used))
 void pend_sv_handler(void)
 {
-	current_task->stack = push_stack();
+	SCHED_PUSH_STACK();
 
 	SCB_ICSR |= SCB_ICSR_PENDSVCLR;
 
@@ -146,16 +146,13 @@ void pend_sv_handler(void)
 
 	current_task->state = RUNNING;
 
-	pop_stack(current_task->stack);
-
-	asm("bx %[exc_ret]"
-	    :: [exc_ret] "r" (0xFFFFFFFD));
+	SCHED_POP_STACK_AND_BRANCH();
 }
 
-__attribute__((naked))
+__attribute__((naked, used))
 void sys_tick_handler(void)
 {
-	current_task->stack = push_stack();
+	SCHED_PUSH_STACK();
 
 	os_tick_count++;
 
@@ -168,9 +165,6 @@ void sys_tick_handler(void)
 
 	current_task->state = RUNNING;
 
-	pop_stack(current_task->stack);
-
-	asm("bx %[exc_ret]"
-	    :: [exc_ret] "r" (0xFFFFFFFD));
+	SCHED_POP_STACK_AND_BRANCH();
 }
 
