@@ -67,14 +67,14 @@ void sched_start_tasks(void)
 
 	current_task->stack += 16;
 
-	// Set PSR value
+	// Set EPSR value
 	// Set PSP value
 	// Switch to using PSP (in CONTROL)
 	// Set argument for task_runner
 	// Instruction barrier
 	// Branch to task runner
 	asm volatile (
-	    "msr psr, %[psr_setting]\n\t"
+	    "msr psr_nzcvq, %[psr_setting]\n\t"
 	    "msr psp, %[stack]\n\t"
 	    "mov r1, #2\n\t"
 	    "msr control, r1\n\t"
