@@ -83,5 +83,8 @@ void os_tasks_start(void);
 
 void os_task_yield(void);
 
+void os_task_suspend_self(void);
+
+bool os_task_unsuspend(task_t *task);
 
 #endif /* MOUROS_TASKS_H_ */

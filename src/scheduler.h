@@ -19,7 +19,6 @@ extern struct tcb* current_task;
 
 extern uint64_t os_tick_count;
 
-
 void sched_init(void);
 
 void sched_start_tasks(void);

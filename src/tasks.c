@@ -196,4 +196,31 @@ void os_task_yield(void)
 }
 
 
+void os_task_suspend_self(void)
+{
+	current_task->state = SUSPENDED;
+
+	os_task_yield();
+}
+
+bool os_task_unsuspend(task_t *task)
+{
+	CM_ATOMIC_CONTEXT();
+
+	if (task->state != SUSPENDED) {
+		return false;
+	}
+
+	task->state = RUNNABLE;
+
+	sched_add_runqueue_tail(task);
+
+	if (current_task->priority > task->priority) {
+		os_task_yield();
+	}
+
+	return true;
+}
+
+
 
