@@ -23,7 +23,9 @@ void sched_init(void);
 
 void sched_start_tasks(void);
 
-void sched_add_runqueue_head(struct tcb *task);
-void sched_add_runqueue_tail(struct tcb *task);
+void sched_add_to_runqueue_head(struct tcb *task);
+void sched_add_to_runqueue_tail(struct tcb *task);
+
+void sched_add_to_sleepqueue(struct tcb *task);
 
 #endif /* SCHEDULER_H_ */

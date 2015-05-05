@@ -169,7 +169,7 @@ bool os_task_add(task_t *new_task)
 	}
 
 
-	sched_add_runqueue_tail(new_task);
+	sched_add_to_runqueue_tail(new_task);
 
 	return true;
 }
@@ -213,13 +213,25 @@ bool os_task_unsuspend(task_t *task)
 
 	task->state = RUNNABLE;
 
-	sched_add_runqueue_tail(task);
+	sched_add_to_runqueue_tail(task);
 
 	if (current_task->priority > task->priority) {
 		os_task_yield();
 	}
 
 	return true;
+}
+
+void os_task_sleep(uint32_t num_ticks)
+{
+	CM_ATOMIC_CONTEXT();
+
+	current_task->wakeup_time = os_tick_count + num_ticks;
+	current_task->state = SLEEPING;
+
+	sched_add_to_sleepqueue(current_task);
+
+	os_task_yield();
 }
 
 

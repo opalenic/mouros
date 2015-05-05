@@ -87,4 +87,6 @@ void os_task_suspend_self(void);
 
 bool os_task_unsuspend(task_t *task);
 
+void os_task_sleep(uint32_t num_ticks);
+
 #endif /* MOUROS_TASKS_H_ */
