@@ -11,7 +11,7 @@
 #include "scheduler.h"
 
 
-#include "stack_m0.h" // Stack popping and pushing functions.
+#include "stack_m0.h" // Stack popping and pushing macros.
 
 #define NUM_PRIO_LEVELS 16
 
