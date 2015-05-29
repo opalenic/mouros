@@ -1,17 +1,23 @@
-/*
- * sync.c
+/**
+ * @file
  *
- *  Created on: 28. 5. 2015
- *      Author: ondra
+ * This file holds the implementation of the MourOS resource facility.
+ *
  */
 
-#include <libopencm3/cm3/cortex.h>
+#include <libopencm3/cm3/cortex.h> // CM_ATOMIC_*
 
-
-#include <mouros/sync.h>
+#include <mouros/sync.h> // Function and struct declarations.
 #include "scheduler.h"   // current_task & sched_add_to_runqueue_head
 
 
+/**
+ * Adds the current task to the linked list of task waiting for res to be
+ * available. The task is inserted into the list based on its priority. A higher
+ * priority task will be placed before a lower priority task.
+ *
+ * @param res Pointer to the resource the current task should wait for.
+ */
 static void insert_waiting_task(struct resource *res) {
 
 	struct tcb *task = res->first_waiting;

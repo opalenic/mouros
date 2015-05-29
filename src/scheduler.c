@@ -1,5 +1,7 @@
-/*
- * scheduler.c
+/**
+ * @file
+ *
+ * This file contains the implementation of the MourOS scheduler.
  *
  *  Created on: 28. 4. 2015
  *      Author: ondra
@@ -13,11 +15,16 @@
 
 #include "stack_m0.h" // Stack popping and pushing macros.
 
-#define NUM_PRIO_LEVELS 16
 
-
+/**
+ * This array of task_group structs contains the heads for queues of RUNNABLE
+ * tasks for each priority level.
+ */
 static struct task_group task_prio_groups[NUM_PRIO_LEVELS];
 
+/**
+ * The head of the sleepqueue list.
+ */
 static struct tcb *sleepqueue_head = NULL;
 
 
@@ -25,9 +32,18 @@ struct tcb *current_task = NULL;
 
 uint64_t os_tick_count = 0;
 
+/**
+ * The priority level of the task with the highest priority that is currently
+ * in the RUNNABLE state.
+ */
 static uint8_t highest_prio_level = 0;
 
 
+/**
+ * Retrieves the first task with the highest priority that is ready to be run.
+ *
+ * @return Pointer to the next task to be scheduled.
+ */
 static struct tcb *take_highest_prio_task(void)
 {
 	for (uint8_t i = highest_prio_level; i < NUM_PRIO_LEVELS; i++) {
@@ -49,6 +65,10 @@ static struct tcb *take_highest_prio_task(void)
 	return NULL;
 }
 
+/**
+ * Searches the sleepqueue and moves any tasks, that should be woken up, into
+ * the runqueue and sets their state to RUNNABLE.
+ */
 static void wakeup_tasks(void)
 {
 	struct tcb *sleeping = sleepqueue_head;
@@ -179,7 +199,9 @@ void sched_add_to_sleepqueue(struct tcb *task)
 }
 
 
-
+/**
+ * Scheduling function that is run after a call to os_task_yield().
+ */
 __attribute__((naked, used))
 void pend_sv_handler(void)
 {
@@ -200,6 +222,9 @@ void pend_sv_handler(void)
 	SCHED_POP_STACK_AND_BRANCH();
 }
 
+/**
+ * Scheduling function that is run when a task's time-slice expires.
+ */
 __attribute__((naked, used))
 void sys_tick_handler(void)
 {

@@ -1,8 +1,9 @@
-/*
- * tasks.c
+/**
+ * @file
  *
- *  Created on: 27. 4. 2015
- *      Author: ondra
+ * This file contains the implementation of the main MourOS task manipulating
+ * functions.
+ *
  */
 
 #include <stddef.h>  // For NULL
@@ -22,20 +23,33 @@
 
 bool os_is_initialized = false;
 
-
+/**
+ * Struct holding pointers to the first and last tasks in the linked list of all
+ * tasks.
+ */
 static struct task_group all_tasks = {
 	.first = NULL,
 	.last = NULL
 };
 
 
-
+/**
+ * Function implementing the idle (do-nothing) task.
+ *
+ * @param params Parameters of the idle task. Not used.
+ */
 static void __idle_task(void *params)
 {
 	while(true) {
 	}
 }
 
+/**
+ * Function used to start task execution and to remove the task from the
+ * all-tasks linked list.
+ *
+ * @param task Pointer to the task to be run.
+ */
 static void __task_runner(struct tcb *task)
 {
 	task->task_func(task->task_params);

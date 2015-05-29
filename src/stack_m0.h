@@ -1,14 +1,19 @@
-/*
- * stack_m0.h
+/**
+ * @file
  *
- *  Created on: 27. 4. 2015
- *      Author: ondra
+ * This file contains the definition of the macros used to save and reload a
+ * task's context in pend_sv_handler() and sys_tick_handler().
+ *
  */
 
 #ifndef STACK_M0_H_
 #define STACK_M0_H_
 
-
+/**
+ * This macro saves the state of the processor registers onto the current task
+ * stack. Only the registers that aren't saved automatically on exception entry
+ * are saved.
+ */
 #define SCHED_PUSH_STACK() \
 	register int *psp_after_push asm("r0"); \
 	\
@@ -26,6 +31,11 @@
 	\
 	current_task->stack = psp_after_push
 
+/**
+ * This macro restores the state of the processor registers from the current
+ * task stack, and returns to current task execution. Only registers that aren't
+ * restored automatically on exception exit are restored.
+ */
 #define SCHED_POP_STACK_AND_BRANCH() \
 	register int *psp_before_pop asm("r0") = current_task->stack; \
 	register unsigned int ret_vector asm("r1") = 0xfffffffd; \
