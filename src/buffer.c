@@ -6,7 +6,9 @@
  *
  */
 
-#include <mouros/buffer.h>
+#include <stddef.h> // For NULL.
+
+#include <mouros/buffer.h> // For the buffer functions & data types.
 
 
 /**
@@ -54,7 +56,7 @@ void os_buffer_init(buffer_t *buf,
 bool os_buffer_write_byte(buffer_t *buf, uint8_t in)
 {
 	bool ret = write_char(buf, in);
-	if (ret) {
+	if (ret && buf->data_added != NULL) {
 		buf->data_added();
 	}
 
@@ -68,6 +70,10 @@ uint32_t os_buffer_write(buffer_t *buf, uint8_t *in, uint32_t in_len)
 		if (write_char(buf, in[i])) {
 			break;
 		}
+	}
+
+	if (i > 0 && buf->data_added != NULL) {
+		buf->data_added();
 	}
 
 	return i;
