@@ -14,7 +14,7 @@
 
 #include "diag/diag.h"
 
-#include "stack_m0.h" // Stack popping and pushing macros.
+#include "stack_mx.h" // Stack popping and pushing macros.
 
 
 /**

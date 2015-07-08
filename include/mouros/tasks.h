@@ -98,6 +98,13 @@ typedef struct tcb {
 	 */
 	uint64_t wakeup_time;
 
+	/**
+	 * The value of the exception return vector in the link register when
+	 * the task undergoes stacking (in pend_sv_handler() &
+	 * sys_tick_handler()).
+	 */
+	int exc_ret;
+
 	/** Pointer pointer to the stack allocated to the task. */
 	int *stack_base;
 	/** Pointer to the current top of the stack. */

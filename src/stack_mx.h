@@ -6,8 +6,8 @@
  *
  */
 
-#ifndef STACK_M0_H_
-#define STACK_M0_H_
+#ifndef STACK_MX_H_
+#define STACK_MX_H_
 
 /**
  * This macro saves the state of the processor registers onto the current task
@@ -29,7 +29,11 @@
 	     : [new_psp] "=r" (psp_after_push) \
 	     :: "cc", "memory"); \
 	\
-	current_task->stack = psp_after_push
+	current_task->stack = psp_after_push; \
+	\
+	asm ("mov %[exc_ret], lr" \
+	     : [exc_ret] "=r" (current_task->exc_ret) \
+	     :: "memory")
 
 /**
  * This macro restores the state of the processor registers from the current
@@ -37,8 +41,10 @@
  * restored automatically on exception exit are restored.
  */
 #define SCHED_POP_STACK_AND_BRANCH() \
+	asm ("mov lr, %[exc_ret]" \
+	     :: [exc_ret] "r" (current_task->exc_ret)); \
+	\
 	register int *psp_before_pop asm("r0") = current_task->stack; \
-	register unsigned int ret_vector asm("r1") = 0xfffffffd; \
 	\
 	asm ("mov r2, #16\n\t" \
 	     "add r3, %[old_psp], r2\n\t" \
@@ -49,10 +55,9 @@
 	     "mov r11, r7\n\t" \
 	     "ldm %[old_psp]!, {r4-r7}\n\t" \
 	     "msr psp, r3\n\t" \
-	     "bx %[exc_ret]" \
-	     :: [old_psp] "r" (psp_before_pop), \
-	        [exc_ret] "r" (ret_vector) \
+	     "bx lr" \
+	     :: [old_psp] "r" (psp_before_pop) \
 	     : "cc")
 
 
-#endif /* STACK_M0_H_ */
+#endif /* STACK_MX_H_ */

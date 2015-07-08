@@ -135,8 +135,6 @@ bool os_task_init(task_t *task,
 	task->stack_base = (int *)stack_base;
 	task->stack_size = stack_size;
 
-
-
 	task->stack = (int *) (stack_base + stack_size - 64);
 
 	for (uint8_t i = 0; i < 16; i++) {
