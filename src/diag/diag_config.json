@@ -1,0 +1,24 @@
+[
+	{
+		"name": "TASK_SWITCH",
+		"text": "Task switch: {timestamp}: {from_id} -> {to_id}",
+		"args": [
+			{
+				"name": "timestamp",
+				"type": "uint64_t"
+			},
+			{
+				"name": "from_id",
+				"type": "uint8_t"
+			},
+			{
+				"name": "to_id",
+				"type": "uint8_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_SBRK",
+		"text": "Call to sbrk."
+	}
+]

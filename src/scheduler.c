@@ -12,6 +12,7 @@
 
 #include "scheduler.h"
 
+#include "diag/diag.h"
 
 #include "stack_m0.h" // Stack popping and pushing macros.
 
@@ -232,6 +233,8 @@ void sys_tick_handler(void)
 
 	os_tick_count++;
 
+	uint8_t prev_id = current_task->id;
+
 	wakeup_tasks();
 
 	sched_add_to_runqueue_tail(current_task);
@@ -242,6 +245,8 @@ void sys_tick_handler(void)
 	_impure_ptr = &current_task->reent;
 
 	current_task->state = RUNNING;
+
+	diag_task_switch(os_tick_count, prev_id, current_task->id);
 
 	SCHED_POP_STACK_AND_BRANCH();
 }
