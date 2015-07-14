@@ -9,6 +9,8 @@
 
 #include <errno.h> // Error codes.
 
+#include "diag/diag.h" // For the diag log functions.
+
 /** Minimal implementation of environment variables. */
 char *__env[1] = { 0 };
 /** Minimal implementation of environment variables. */
@@ -26,6 +28,8 @@ char **environ = __env;
  */
 int _close_r(struct _reent *reent, int filedes)
 {
+	diag_syscall_close(filedes);
+
 	reent->_errno = EBADF;
 	return -1;
 }
@@ -47,6 +51,8 @@ int _execve_r(struct _reent *reent,
               char *const *argv,
               char *const *envp)
 {
+	diag_syscall_execve((uint32_t) path, (uint32_t) argv, (uint32_t) envp);
+
 	reent->_errno = EBADF;
 	return -1;
 }
@@ -66,6 +72,8 @@ int _execve_r(struct _reent *reent,
  */
 int _fcntl_r(struct _reent *reent, int filedes, int cmd, int arg)
 {
+	diag_syscall_fcntl(filedes, cmd, arg);
+
 	reent->_errno = EBADF;
 	return -1;
 }
@@ -82,6 +90,8 @@ int _fcntl_r(struct _reent *reent, int filedes, int cmd, int arg)
  */
 int _fork_r(struct _reent *reent)
 {
+	diag_syscall_fork();
+
 	reent->_errno = ENOSYS;
 	return -1;
 }
@@ -99,6 +109,8 @@ int _fork_r(struct _reent *reent)
  */
 int _fstat_r(struct _reent *reent, int filedes, struct stat *buf)
 {
+	diag_syscall_fstat(filedes, (uint32_t) buf);
+
 	reent->_errno = EBADF;
 	return -1;
 }
@@ -112,6 +124,8 @@ int _fstat_r(struct _reent *reent, int filedes, struct stat *buf)
  */
 int _getpid_r(struct _reent *reent)
 {
+	diag_syscall_getpid();
+
 	return 1;
 }
 
@@ -126,6 +140,8 @@ int _getpid_r(struct _reent *reent)
  */
 int _isatty_r(struct _reent *reent, int filedes)
 {
+	diag_syscall_isatty(filedes);
+
 	return 1;
 }
 
@@ -141,6 +157,8 @@ int _isatty_r(struct _reent *reent, int filedes)
  */
 int _kill_r(struct _reent *reent, int pid, int sig)
 {
+	diag_syscall_kill(pid, sig);
+
 	reent->_errno = ESRCH;
 	return -1;
 }
@@ -157,6 +175,8 @@ int _kill_r(struct _reent *reent, int pid, int sig)
  */
 int _link_r(struct _reent *reent, const char *oldpath, const char *newpath)
 {
+	diag_syscall_link((uint32_t) oldpath, (uint32_t) newpath);
+
 	reent->_errno = EBADF;
 	return -1;
 }
@@ -174,6 +194,8 @@ int _link_r(struct _reent *reent, const char *oldpath, const char *newpath)
  */
 _off_t _lseek_r(struct _reent *reent, int filedes, _off_t offset, int whence)
 {
+	diag_syscall_lseek(filedes, offset, whence);
+
 	reent->_errno = EBADF;
 	return (_off_t) -1;
 }
@@ -189,6 +211,8 @@ _off_t _lseek_r(struct _reent *reent, int filedes, _off_t offset, int whence)
  */
 int _mkdir_r(struct _reent *reent, const char *pathname, int mode)
 {
+	diag_syscall_mkdir((uint32_t) pathname, mode);
+
 	reent->_errno = EPERM;
 	return  -1;
 }
@@ -204,6 +228,8 @@ int _mkdir_r(struct _reent *reent, const char *pathname, int mode)
  */
 int _open_r(struct _reent *reent, const char *pathname, int flags, int mode)
 {
+	diag_syscall_open((uint32_t) pathname, flags, mode);
+
 	reent->_errno = EACCES;
 	return -1;
 }
@@ -217,9 +243,10 @@ int _open_r(struct _reent *reent, const char *pathname, int flags, int mode)
  * @param count   The size of buf.
  * @return The number of bytes actually read.
  */
-__attribute__((used))
 _ssize_t _read_r(struct _reent *reent, int filedes, void *buf, size_t count)
 {
+	diag_syscall_read(filedes, (uint32_t) buf, count);
+
 	reent->_errno = EBADF;
 	return -1;
 }
@@ -234,6 +261,8 @@ _ssize_t _read_r(struct _reent *reent, int filedes, void *buf, size_t count)
  */
 int _rename_r(struct _reent *reent, const char *oldpath, const char *newpath)
 {
+	diag_syscall_rename((uint32_t) oldpath, (uint32_t) newpath);
+
 	reent->_errno = EBADF;
 	return -1;
 }
@@ -248,6 +277,8 @@ int _rename_r(struct _reent *reent, const char *oldpath, const char *newpath)
  */
 void *_sbrk_r(struct _reent *reent, ptrdiff_t increment)
 {
+	diag_syscall_sbrk(increment);
+
 	reent->_errno = ENOMEM;
 	return (void *)-1;
 }
@@ -262,6 +293,8 @@ void *_sbrk_r(struct _reent *reent, ptrdiff_t increment)
  */
 int _stat_r(struct _reent *reent, const char *pathname, struct stat *buf)
 {
+	diag_syscall_stat((uint32_t) pathname, (uint32_t) buf);
+
 	reent->_errno = EBADF;
 	return -1;
 }
@@ -275,6 +308,8 @@ int _stat_r(struct _reent *reent, const char *pathname, struct stat *buf)
  */
 _CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
 {
+	diag_syscall_times((uint32_t) buf);
+
 	reent->_errno = ENOSYS;
 	return (_CLOCK_T_) -1;
 }
@@ -288,6 +323,8 @@ _CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
  */
 int _unlink_r(struct _reent *reent, const char *pathname)
 {
+	diag_syscall_unlink((uint32_t) pathname);
+
 	reent->_errno = ENOENT;
 	return -1;
 }
@@ -302,6 +339,8 @@ int _unlink_r(struct _reent *reent, const char *pathname)
  */
 int _wait_r(struct _reent *reent, int *status)
 {
+	diag_syscall_wait((uint32_t) status);
+
 	reent->_errno = ECHILD;
 	return -1;
 }
@@ -318,6 +357,8 @@ int _wait_r(struct _reent *reent, int *status)
  */
 _ssize_t _write_r(struct _reent *reent, int filedes, const void *buf, size_t count)
 {
+	diag_syscall_write(filedes, (uint32_t) buf, count);
+
 	reent->_errno = EBADF;
 	return -1;
 }
