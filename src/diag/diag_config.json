@@ -18,7 +18,264 @@
 		]
 	},
 	{
+		"name": "SYSCALL_CLOSE",
+		"text": "Syscall: _close_r: File descriptor: {filedes}",
+		"args": [
+			{
+				"name": "filedes",
+				"type": "int32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_EXECVE",
+		"text": "Syscall: _execve_r: Path addr: {path}, Argv addr: {argv}, Env addr: {envp}",
+		"args": [
+			{
+				"name": "path",
+				"type": "uint32_t"
+			},
+			{
+				"name": "argv",
+				"type": "uint32_t"
+			},
+			{
+				"name": "envp",
+				"type": "uint32_t"
+			}
+		]
+
+	},
+	{
+		"name": "SYSCALL_FCNTL",
+		"text": "Syscall: _fcntl_r: File descriptor: {filedes}, Cmd: {cmd}, Arg: {arg}",
+		"args": [
+			{
+				"name": "filedes",
+				"type": "int32_t"
+			},
+			{
+				"name": "cmd",
+				"type": "int32_t"
+			},
+			{
+				"name": "arg",
+				"type": "int32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_FORK",
+		"text": "Syscall: _fork_r."
+	},
+	{
+		"name": "SYSCALL_FSTAT",
+		"text": "Syscall: _fcntl_r: File descriptor: {filedes}, Buffer addr: {buf}",
+		"args": [
+			{
+				"name": "filedes",
+				"type": "int32_t"
+			},
+			{
+				"name": "buf",
+				"type": "uint32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_GETPID",
+		"text": "Syscall: _getpid_r."
+	},
+	{
+		"name": "SYSCALL_ISATTY",
+		"text": "Syscall: _isatty_r: File descriptor: {filedes}",
+		"args": [
+			{
+				"name": "filedes",
+				"type": "int32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_KILL",
+		"text": "Syscall: _kill_r: PID: {pid}, Signal: {sig}",
+		"args": [
+			{
+				"name": "pid",
+				"type": "int32_t"
+			},
+			{
+				"name": "sig",
+				"type": "int32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_LINK",
+		"text": "Syscall: _link_r: Oldpath addr: {oldpath}, Newpath addr: {newpath}",
+		"args": [
+			{
+				"name": "oldpath",
+				"type": "uint32_t"
+			},
+			{
+				"name": "newpath",
+				"type": "uint32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_LSEEK",
+		"text": "Syscall: _lseek_r: File descriptor: {filedes}, Offset: {offset}, Whence: {whence}",
+		"args": [
+			{
+				"name": "filedes",
+				"type": "int32_t"
+			},
+			{
+				"name": "offset",
+				"type": "int32_t"
+			},
+			{
+				"name": "whence",
+				"type": "int32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_MKDIR",
+		"text": "Syscall: _mkdir_r: Pathname addr: {pathname}, Mode: {mode}",
+		"args": [
+			{
+				"name": "pathname",
+				"type": "uint32_t"
+			},
+			{
+				"name": "mode",
+				"type": "int32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_OPEN",
+		"text": "Syscall: _open_r: Pathname addr: {pathname}, Flags: {flags}, Mode: {mode}",
+		"args": [
+			{
+				"name": "pathname",
+				"type": "uint32_t"
+			},
+			{
+				"name": "flags",
+				"type": "int32_t"
+			},
+			{
+				"name": "mode",
+				"type": "int32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_READ",
+		"text": "Syscall: _read_r: File descriptor: {filedes}, Buffer addr: {buf}, Size: {count}",
+		"args": [
+			{
+				"name": "filedes",
+				"type": "int32_t"
+			},
+			{
+				"name": "buf",
+				"type": "uint32_t"
+			},
+			{
+				"name": "count",
+				"type": "uint32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_RENAME",
+		"text": "Syscall: _rename_r: Oldpath addr: {oldpath}, Newpath addr: {newpath}",
+		"args": [
+			{
+				"name": "oldpath",
+				"type": "uint32_t"
+			},
+			{
+				"name": "newpath",
+				"type": "uint32_t"
+			}
+		]
+	},
+	{
 		"name": "SYSCALL_SBRK",
-		"text": "Call to sbrk."
+		"text": "Syscall: _sbrk_r: Increment: {increment}",
+		"args": [
+			{
+				"name": "increment",
+				"type": "int32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_STAT",
+		"text": "Syscall: _stat_r: Pathname addr: {pathname}, Stat buffer addr: {buf}",
+		"args": [
+			{
+				"name": "pathname",
+				"type": "uint32_t"
+			},
+			{
+				"name": "buf",
+				"type": "uint32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_TIMES",
+		"text": "Syscall: _times_r: Tms buffer addr: {buf}",
+		"args": [
+			{
+				"name": "buf",
+				"type": "uint32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_UNLINK",
+		"text": "Syscall: _unlink_r: Pathname addr: {pathname}",
+		"args": [
+			{
+				"name": "pathname",
+				"type": "uint32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_WAIT",
+		"text": "Syscall: _wait_r: Status addr: {status}",
+		"args": [
+			{
+				"name": "status",
+				"type": "uint32_t"
+			}
+		]
+	},
+	{
+		"name": "SYSCALL_WRITE",
+		"text": "Syscall: _write_r: File descriptor: {filedes}, Buffer addr: {buf}, Count: {count}",
+		"args": [
+			{
+				"name": "filedes",
+				"type": "int32_t"
+			},
+			{
+				"name": "buf",
+				"type": "uint32_t"
+			},
+			{
+				"name": "count",
+				"type": "uint32_t"
+			}
+		]
 	}
 ]
