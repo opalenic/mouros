@@ -67,7 +67,7 @@ uint32_t os_buffer_write(buffer_t *buf, uint8_t *in, uint32_t in_len)
 {
 	uint32_t i;
 	for (i = 0; i < in_len; i++) {
-		if (write_char(buf, in[i])) {
+		if (!write_char(buf, in[i])) {
 			break;
 		}
 	}
@@ -104,7 +104,7 @@ uint32_t os_buffer_read(buffer_t *buf, uint8_t *out, uint32_t out_len)
 {
 	uint32_t i;
 	for (i = 0; i < out_len; i++) {
-		if (os_buffer_read_ch(buf, &out[i])) {
+		if (!os_buffer_read_ch(buf, &out[i])) {
 			break;
 		}
 	}
