@@ -212,4 +212,22 @@ bool os_task_unsuspend(task_t *task);
  */
 void os_task_sleep(uint32_t num_ticks);
 
+/**
+ * This function registers send and error functions for diagnostic logging.
+ *
+ * The send function should take a pointer to a byte buffer and the length of
+ * the buffer as parameters and return the number of bytes successfully
+ * transmitted.
+ *
+ * The error function will be called by the diagnostics subsystem if the send
+ * function does not transmit all the bytes in its buffer sucessfully.
+ *
+ * @param diag_send_func  Pointer to the send function.
+ * @param diag_error_func Pointer to the error function.
+ */
+void os_set_diagnostics(uint8_t (*diag_send_func)(uint8_t *msg_buf,
+                                                  uint8_t msg_buf_len),
+                        void (*diag_error_func)(void));
+
+
 #endif /* MOUROS_TASKS_H_ */

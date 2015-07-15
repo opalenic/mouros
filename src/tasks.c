@@ -20,6 +20,8 @@
 #include <mouros/tasks.h>
 #include "scheduler.h"
 
+#include "diag/diag.h"
+
 
 bool os_is_initialized = false;
 
@@ -90,6 +92,8 @@ void os_init(void)
 
 	sched_init();
 
+	os_is_initialized = true;
+
 	static struct tcb idle_task;
 	static uint8_t idle_task_stack[128];
 
@@ -99,7 +103,6 @@ void os_init(void)
 
 	os_task_add(&idle_task);
 
-	os_is_initialized = true;
 }
 
 
@@ -245,6 +248,14 @@ void os_task_sleep(uint32_t num_ticks)
 
 	os_task_yield();
 }
+
+void os_set_diagnostics(uint8_t (*diag_send_func)(uint8_t *msg_buf,
+                                                  uint8_t msg_buf_len),
+                        void (*diag_error_func)(void))
+{
+	diag_init(diag_send_func, diag_error_func);
+}
+
 
 
 
