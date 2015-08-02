@@ -10,6 +10,13 @@
 #define STACK_MX_H_
 
 /**
+ * The default exception return vector to start new tasks with.
+ *
+ * @details Non-FPU version here. Returns to thread mode, using the program
+ *          stack pointer.
+ */
+#define DEFAULT_EXC_RET 0xfffffffd
+/**
  * This macro saves the state of the processor registers onto the current task
  * stack. Only the registers that aren't saved automatically on exception entry
  * are saved.

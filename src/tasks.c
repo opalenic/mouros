@@ -19,6 +19,7 @@
 
 #include <mouros/tasks.h>
 #include "scheduler.h"
+#include "stack_mx.h"
 
 #include "diag/diag.h"
 
@@ -147,6 +148,7 @@ bool os_task_init(task_t *task,
 	task->stack[14] = (int) __task_runner;
 	task->stack[15] = 1 << 24; // write to PSR (EPSR), set the Thumb bit
 
+	task->exc_ret = DEFAULT_EXC_RET;
 
 	_REENT_INIT_PTR(&task->reent);
 

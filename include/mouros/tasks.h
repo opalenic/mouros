@@ -103,7 +103,7 @@ typedef struct tcb {
 	 * the task undergoes stacking (in pend_sv_handler() &
 	 * sys_tick_handler()).
 	 */
-	int exc_ret;
+	unsigned int exc_ret;
 
 	/** Pointer pointer to the stack allocated to the task. */
 	int *stack_base;
