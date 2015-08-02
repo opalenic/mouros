@@ -63,11 +63,27 @@ bool os_buffer_write_byte(buffer_t *buf, uint8_t in)
 	return ret;
 }
 
-uint32_t os_buffer_write(buffer_t *buf, uint8_t *in, uint32_t in_len)
+uint32_t os_buffer_write(buffer_t *buf, const uint8_t *in, uint32_t in_len)
 {
 	uint32_t i;
 	for (i = 0; i < in_len; i++) {
 		if (!write_char(buf, in[i])) {
+			break;
+		}
+	}
+
+	if (i > 0 && buf->data_added != NULL) {
+		buf->data_added();
+	}
+
+	return i;
+}
+
+uint32_t os_buffer_write_str(buffer_t *buf, const char *str)
+{
+	uint32_t i;
+	for (i = 0; str[i] != '\0'; i++) {
+		if (!write_char(buf, str[i])) {
 			break;
 		}
 	}

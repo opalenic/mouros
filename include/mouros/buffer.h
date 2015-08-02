@@ -82,7 +82,20 @@ bool os_buffer_write_byte(buffer_t *buf, uint8_t in);
  * @return The number of bytes successfully inserted into the buffer. This
  *         should be equal to in_len if all data was inserted.
  */
-uint32_t os_buffer_write(buffer_t *buf, uint8_t *in, uint32_t in_len);
+uint32_t os_buffer_write(buffer_t *buf, const uint8_t *in, uint32_t in_len);
+
+/**
+ * Inserts the string pointed to by str into the buffer. Will not write the
+ * terminating '\0' character.
+ *
+ * @param buf Pointer to the buffer struct.
+ * @param str Pointer to the string to be added.
+ * @return The number of characters succesfully inserted into the buffer. This
+ *         should be equal to the string lenght minus one (the terminating '\0'
+ *         character, which is not written to the buffer).
+ */
+uint32_t os_buffer_write_str(buffer_t *buf, const char *str);
+
 
 /**
  * Reads a single byte from the buffer.
@@ -106,7 +119,6 @@ bool os_buffer_read_ch(buffer_t *buf, uint8_t *out);
  * @return
  */
 uint32_t os_buffer_read(buffer_t *buf, uint8_t *out, uint32_t out_len);
-
 
 
 #endif /* MOUROS_BUFFER_H_ */
