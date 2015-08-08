@@ -14,8 +14,22 @@
 
 #include "diag/diag.h"
 
-#include "stack_mx.h" // Stack popping and pushing macros.
+// Stack popping and pushing macros.
+// Cortex-M0
+#if defined(__ARM_ARCH_6M__)
+#include "stack_m0.h"
 
+// Cortex-M3 or Cortex-M4(F)
+#elif defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__)
+
+// Has a floating point unit?
+#  if defined(__ARM_FP)
+#    include "stack_m4f.h"
+#  else
+#    include "stack_m34.h"
+#  endif
+
+#endif
 
 /**
  * This array of task_group structs contains the heads for queues of RUNNABLE
@@ -108,7 +122,8 @@ void sched_start_tasks(void)
 	int task_runner = current_task->stack[14];
 	int psr_setting = current_task->stack[15];
 
-	current_task->stack += 16;
+	current_task->stack = (int *) ((uint8_t *) current_task->stack_base +
+			current_task->stack_size);
 
 	// Set EPSR value
 	// Set PSP value
@@ -205,7 +220,7 @@ void sched_add_to_sleepqueue(struct tcb *task)
 /**
  * Scheduling function that is run after a call to os_task_yield().
  */
-__attribute__((naked, used))
+__attribute__((naked))
 void pend_sv_handler(void)
 {
 	SCHED_PUSH_STACK();
@@ -228,7 +243,7 @@ void pend_sv_handler(void)
 /**
  * Scheduling function that is run when a task's time-slice expires.
  */
-__attribute__((naked, used))
+__attribute__((naked))
 void sys_tick_handler(void)
 {
 	SCHED_PUSH_STACK();
