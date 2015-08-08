@@ -102,6 +102,8 @@ void sched_start_tasks(void)
 {
 	current_task = take_highest_prio_task();
 
+	current_task->state = RUNNING;
+
 	int task_struct = current_task->stack[8];
 	int task_runner = current_task->stack[14];
 	int psr_setting = current_task->stack[15];
