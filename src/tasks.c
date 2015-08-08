@@ -24,6 +24,29 @@
 #include "diag/diag.h"
 
 
+/**
+ * The default exception return vector to start new tasks with. Used when
+ * returning from context switching interrupts.
+ *
+ * @details 0xfffffffd means, that the task should return to privileged thread
+ *          mode, use the program stack pointer, and do not use the FPU. If the
+ *          processor has an FPU and the task starts using it, the task's
+ *          exc_ret changes to 0xffffffed, which means return to privileged
+ *          thread mode, use the program stack pointer, and use the FPU.
+ */
+#define DEFAULT_EXC_RET 0xfffffffd
+
+
+// __ARM_FP is defined by the compiler. According to http://infocenter.arm.com/
+// help/topic/com.arm.doc.ihi0053b/IHI0053B_arm_c_language_extensions_2013.pdf
+#if defined(__ARM_FP)
+// The stack needs to fit the core MCU state (16 registers * 4 bytes), the
+// FPU state (33 * 4 bytes), and possibly some alignment bytes.
+#define IDLE_TASK_STACK_SIZE 256
+#else
+// When the FPU isn't used, only the core MCU state needs to be saved.
+#define IDLE_TASK_STACK_SIZE 128
+#endif
 bool os_is_initialized = false;
 
 /**
@@ -96,9 +119,9 @@ void os_init(void)
 	os_is_initialized = true;
 
 	static struct tcb idle_task;
-	static uint8_t idle_task_stack[128];
+	static uint8_t idle_task_stack[IDLE_TASK_STACK_SIZE];
 
-	os_task_init(&idle_task, "idle", idle_task_stack, 128,
+	os_task_init(&idle_task, "idle", idle_task_stack, IDLE_TASK_STACK_SIZE,
 			NUM_PRIO_LEVELS - 1, __idle_task, NULL);
 
 
@@ -191,16 +214,17 @@ bool os_task_add(task_t *new_task)
 	return true;
 }
 
-void os_tasks_start(void)
+void os_tasks_start(uint32_t tick_freq)
 {
 	cm3_assert(os_is_initialized);
 
-	systick_set_frequency(5, rcc_ahb_frequency);
+	systick_set_frequency(tick_freq, rcc_ahb_frequency);
 
 	nvic_set_priority(NVIC_SYSTICK_IRQ, 0xff);
 
 	nvic_set_priority(NVIC_PENDSV_IRQ, 0xff);
 
+	systick_clear();
 	systick_interrupt_enable();
 	systick_counter_enable();
 

@@ -175,8 +175,10 @@ bool os_task_add(task_t *task);
  * Starts executing all added tasks.
  *
  * @note This function does not return.
+ *
+ * @param tick_freq The frequency at which to switch tasks.
  */
-void os_tasks_start(void);
+void os_tasks_start(uint32_t tick_freq);
 
 /**
  * This function will force a call to the scheduler. Normal scheduling rules
