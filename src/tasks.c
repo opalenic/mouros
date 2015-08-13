@@ -19,7 +19,6 @@
 
 #include <mouros/tasks.h>
 #include "scheduler.h"
-#include "stack_mx.h"
 
 #include "diag/diag.h"
 
