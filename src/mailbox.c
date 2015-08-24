@@ -56,7 +56,7 @@ void os_mailbox_init(mailbox_t *mb,
 	cm3_assert(msg_buf_len % msg_size == 0);
 }
 
-bool os_mailbox_write(mailbox_t *mb, void *msg)
+bool os_mailbox_write(mailbox_t *mb, const void *msg)
 {
 	bool ret = write_msg(mb, msg);
 	if (ret && mb->data_added != NULL) {

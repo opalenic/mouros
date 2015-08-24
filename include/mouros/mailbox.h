@@ -75,7 +75,7 @@ void os_mailbox_init(mailbox_t *mb,
  * @param msg Pointer to the message to be inserted.
  * @return True if the message was successfully added, false otherwise.
  */
-bool os_mailbox_write(mailbox_t *mb, void *msg);
+bool os_mailbox_write(mailbox_t *mb, const void *msg);
 
 /**
  * Inserts msg_num messages into the mailbox. Calls data_added_callback if the
