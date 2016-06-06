@@ -146,6 +146,17 @@ int _isatty_r(struct _reent *reent, int filedes)
 }
 
 /**
+ * Called when a process exits.
+ *
+ * @note Since MourOS doesn't have processes, this should never return.
+ *
+ * @param status The return code of the process.
+ */
+void _exit(int status) {
+	while (1) {};
+}
+
+/**
  * Sends a signal to a process.
  *
  * @note Since we don't have processes, this will always fail.
