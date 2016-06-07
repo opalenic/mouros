@@ -124,6 +124,8 @@ int _fstat_r(struct _reent *reent, int filedes, struct stat *buf)
  */
 int _getpid_r(struct _reent *reent)
 {
+	(void) reent;
+
 	diag_syscall_getpid();
 
 	return 1;
@@ -142,6 +144,7 @@ int _isatty_r(struct _reent *reent, int filedes)
 {
 	diag_syscall_isatty(filedes);
 
+	reent->_errno = EBADF;
 	return 1;
 }
 
@@ -153,6 +156,8 @@ int _isatty_r(struct _reent *reent, int filedes)
  * @param status The return code of the process.
  */
 void _exit(int status) {
+	(void) status;
+
 	while (1) {};
 }
 
