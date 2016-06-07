@@ -69,7 +69,8 @@ target_compile_options(${PROJECT_NAME}
             "-Wshadow" 
             "-Wlogical-op" 
             "-Waggregate-return" 
-            "-Wfloat-equal")
+            "-Wfloat-equal"
+            "$<$<CONFIG:Debug>:-g>")
 
 
 if(CHIP_FAMILY STREQUAL "STM32F0")
