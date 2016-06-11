@@ -16,9 +16,6 @@ endif()
 
 
 
-
-
-
 add_library(${PROJECT_NAME} STATIC
     "${CMAKE_CURRENT_LIST_DIR}/src/char_buffer.c"
     "${CMAKE_CURRENT_LIST_DIR}/src/mailbox.c"
@@ -26,6 +23,7 @@ add_library(${PROJECT_NAME} STATIC
     "${CMAKE_CURRENT_LIST_DIR}/src/sync.c"
     "${CMAKE_CURRENT_LIST_DIR}/src/syscalls.c"
     "${CMAKE_CURRENT_LIST_DIR}/src/tasks.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/pool_alloc.c"
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC "${CHIP_FAMILY}")
