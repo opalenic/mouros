@@ -14,14 +14,15 @@
 
 #include <mouros/pool_alloc.h>
 
-struct test_struct {
+struct test_struct
+{
 	uint64_t member1;
 	uint32_t member2;
 	uint8_t member3;
 };
 
-static void alloc_dealloc_test(void **state) {
-
+static void alloc_dealloc_test(void **state)
+{
 	(void) state;
 
 	pool_alloc_t pool;
@@ -33,7 +34,6 @@ static void alloc_dealloc_test(void **state) {
 	                   backing_memory,
 	                   sizeof(struct test_struct),
 	                   num_elements);
-
 
 	struct test_struct* block_ptrs[num_elements];
 
@@ -63,8 +63,8 @@ static void alloc_dealloc_test(void **state) {
 	assert_ptr_equal(os_pool_alloc_take(&pool), NULL);
 }
 
-static void small_block_test(void **state) {
-
+static void small_block_test(void **state)
+{
 	(void) state;
 
 	uint16_t backing_memory[10];
@@ -73,7 +73,8 @@ static void small_block_test(void **state) {
 	expect_assert_failure(os_pool_alloc_init(&pool, backing_memory, 2, 10));
 }
 
-int main(void) {
+int main(void)
+{
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(alloc_dealloc_test),
 		cmocka_unit_test(small_block_test)

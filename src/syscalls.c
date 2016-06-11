@@ -16,7 +16,6 @@ char *__env[1] = { 0 };
 /** Minimal implementation of environment variables. */
 char **environ = __env;
 
-
 void _exit(int status);
 
 /**
@@ -26,10 +25,11 @@ void _exit(int status);
  *
  * @param status The return code of the process.
  */
-void _exit(int status) {
+void _exit(int status)
+{
 	(void) status;
 
-	while (1) {};
+	while (1);
 }
 
 /**
@@ -64,15 +64,16 @@ int _close_r(struct _reent *reent, int filedes)
  */
 int _execve_r(struct _reent *reent,
               const char *path,
-              char *const *argv,
-              char *const *envp)
+              char * const *argv,
+              char * const *envp)
 {
-	diag_syscall_execve((uint32_t) path, (uint32_t) argv, (uint32_t) envp);
+	diag_syscall_execve((uint32_t) path,
+	                    (uint32_t) argv,
+	                    (uint32_t) envp);
 
 	reent->_errno = EBADF;
 	return -1;
 }
-
 
 /**
  * Manipulates the supplied file descriptor.
@@ -194,7 +195,7 @@ int _kill_r(struct _reent *reent, int pid, int sig)
  */
 int _link_r(struct _reent *reent, const char *oldpath, const char *newpath)
 {
-	diag_syscall_link((uint32_t) oldpath, (uint32_t) newpath);
+	diag_syscall_link((uint32_t ) oldpath, (uint32_t ) newpath);
 
 	reent->_errno = EBADF;
 	return -1;
@@ -219,7 +220,6 @@ _off_t _lseek_r(struct _reent *reent, int filedes, _off_t offset, int whence)
 	return (_off_t) -1;
 }
 
-
 /**
  * Creates a directory.
  *
@@ -233,7 +233,7 @@ int _mkdir_r(struct _reent *reent, const char *pathname, int mode)
 	diag_syscall_mkdir((uint32_t) pathname, mode);
 
 	reent->_errno = EPERM;
-	return  -1;
+	return -1;
 }
 
 /**
@@ -299,7 +299,7 @@ void *_sbrk_r(struct _reent *reent, ptrdiff_t increment)
 	diag_syscall_sbrk(increment);
 
 	reent->_errno = ENOMEM;
-	return (void *)-1;
+	return (void *) -1;
 }
 
 /**
@@ -374,7 +374,10 @@ int _wait_r(struct _reent *reent, int *status)
  * @return Returns the number of bytes actually written to filedes or -1 on
  *         error.
  */
-_ssize_t _write_r(struct _reent *reent, int filedes, const void *buf, size_t count)
+_ssize_t _write_r(struct _reent *reent,
+                  int filedes,
+                  const void *buf,
+                  size_t count)
 {
 	diag_syscall_write(filedes, (uint32_t) buf, count);
 
