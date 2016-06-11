@@ -65,6 +65,8 @@ static struct task_group all_tasks = {
  */
 static void __idle_task(void *params)
 {
+	(void) params;
+
 	while(true) {
 	}
 }
@@ -219,9 +221,13 @@ void os_tasks_start(uint32_t tick_freq)
 
 	systick_set_frequency(tick_freq, rcc_ahb_frequency);
 
+// Silence warning because of a hack libopencm3 did. (NVIC_SYSTICK_IRQ &
+// NVIC_PENDSV_IRQ are negative, and nvic_set_priority() expects an unsigned)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 	nvic_set_priority(NVIC_SYSTICK_IRQ, 0xff);
-
 	nvic_set_priority(NVIC_PENDSV_IRQ, 0xff);
+#pragma GCC diagnostic pop
 
 	systick_clear();
 	systick_interrupt_enable();

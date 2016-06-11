@@ -16,6 +16,22 @@ char *__env[1] = { 0 };
 /** Minimal implementation of environment variables. */
 char **environ = __env;
 
+
+void _exit(int status);
+
+/**
+ * Called when a process exits.
+ *
+ * @note Since MourOS doesn't have processes, this should never return.
+ *
+ * @param status The return code of the process.
+ */
+void _exit(int status) {
+	(void) status;
+
+	while (1) {};
+}
+
 /**
  * Closes the file identified by filedes.
  *
@@ -146,19 +162,6 @@ int _isatty_r(struct _reent *reent, int filedes)
 
 	reent->_errno = EBADF;
 	return 1;
-}
-
-/**
- * Called when a process exits.
- *
- * @note Since MourOS doesn't have processes, this should never return.
- *
- * @param status The return code of the process.
- */
-void _exit(int status) {
-	(void) status;
-
-	while (1) {};
 }
 
 /**
