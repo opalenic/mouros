@@ -33,7 +33,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_INSTALL_PREFIX}/inclu
 
 # Link with libopencm3
 string(TOLOWER "${CHIP_FAMILY}" CHIP_FAMILY_LCASE)
-target_link_libraries(${PROJECT_NAME} PUBLIC "${CMAKE_INSTALL_PREFIX}/lib/libopencm3_${CHIP_FAMILY_LCASE}.a")
+target_link_libraries(${PROJECT_NAME} INTERFACE "${CMAKE_INSTALL_PREFIX}/lib/libopencm3_${CHIP_FAMILY_LCASE}.a")
 
 
 # Generate diagnostic functions
@@ -52,7 +52,7 @@ endif()
 
 
 target_compile_options(${PROJECT_NAME} 
-    PUBLIC "-mthumb" 
+    PUBLIC "-std=gnu11"
            "-fsigned-char" 
            "-ffunction-sections" 
            "-fdata-sections"
@@ -68,22 +68,7 @@ target_compile_options(${PROJECT_NAME}
             "-Wlogical-op" 
             "-Waggregate-return" 
             "-Wfloat-equal"
-            "$<$<CONFIG:Debug>:-g>")
-
-
-if(CHIP_FAMILY STREQUAL "STM32F0")
-    
-    target_compile_options(${PROJECT_NAME} 
-        PUBLIC "-mcpu=cortex-m0")
-
-elseif(CHIP_FAMILY STREQUAL "STM32F4")
-    
-    target_compile_options(${PROJECT_NAME} 
-        PUBLIC "-mcpu=cortex-m4f"
-               "-mfloat-abi=hard"
-               "-mfpu=fpv4-sp-d16")
-endif()
-
+            "$<$<CONFIG:Debug>:-g3>")
 
 
 
