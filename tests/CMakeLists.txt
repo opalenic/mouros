@@ -22,6 +22,7 @@ include_directories(SYSTEM
 
 # Add a few warnings
 add_compile_options(
+    "-std=gnu11"
     "-Wunused" 
     "-Wuninitialized" 
     "-Wall" 
