@@ -7,9 +7,9 @@ if [ -z "$1" ]; then
 fi
 
 
-script_dir=$(dirname "$(realpath "$0")")
+script_dir=$(dirname "$(readlink -e "$0")")
 
-install_prefix=$(realpath -m "$1")
+install_prefix=$(readlink -m "$1")
 if [ $? -ne 0 ]; then
 	exit 1
 fi
