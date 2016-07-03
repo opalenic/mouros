@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(mouros VERSION 0.0.1 LANGUAGES C)
 
+find_package(Doxygen)
 
 set(ENABLE_DIAGNOSTICS OFF CACHE BOOL "Enable MourOS diagnostics")
 
@@ -52,24 +53,39 @@ if(ENABLE_DIAGNOSTICS)
 endif()
 
 
-target_compile_options(${PROJECT_NAME} 
+target_compile_options(${PROJECT_NAME}
     PUBLIC "-std=gnu11"
-           "-fsigned-char" 
-           "-ffunction-sections" 
+           "-fsigned-char"
+           "-ffunction-sections"
            "-fdata-sections"
     PRIVATE "-Og"
-            "-Wunused" 
-            "-Wuninitialized" 
-            "-Wall" 
-            "-Wextra" 
-            "-Wmissing-declarations" 
-            "-Wconversion" 
-            "-Wpointer-arith" 
-            "-Wshadow" 
-            "-Wlogical-op" 
-            "-Waggregate-return" 
+            "-Wunused"
+            "-Wuninitialized"
+            "-Wall"
+            "-Wextra"
+            "-Wmissing-declarations"
+            "-Wconversion"
+            "-Wpointer-arith"
+            "-Wshadow"
+            "-Wlogical-op"
+            "-Waggregate-return"
             "-Wfloat-equal"
             "$<$<CONFIG:Debug>:-g3>")
+
+
+
+if(DOXYGEN_FOUND AND DOXYGEN_DOT_FOUND)
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/doc/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+    add_custom_target(doc
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    )
+
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}")
+else()
+    message(WARNING "Doxygen or dot missing. Won't create doc target.")
+endif()
 
 
 
@@ -77,7 +93,7 @@ install(TARGETS ${PROJECT_NAME}
     ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
 )
 
-install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/include" DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/include" DESTINATION "${CMAKE_INSTALL_PREFIX}")
 
 
 
