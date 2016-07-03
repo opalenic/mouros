@@ -25,7 +25,7 @@ before_install:
     make
     sudo make install
     cd ../..
-  
+
   - cd ..
 
   # Pystache needed for generation of MourOS diagnostic code
@@ -36,7 +36,10 @@ before_install:
     mkdir build
     mkdir build/install
 
-install:    
+  # Needed for generation of coverage reports
+  - sudo pip install gcovr
+
+install:
   # Install libopencm3
   - ./build_libopencm3.sh ./build/install
 
@@ -58,10 +61,12 @@ before_script:
 script:
   # Build it
   - cmake --build build/mouros --clean-first
+  # Build docs
+  - cmake --build build/mouros --target mouros-doc
   # Build & run tests
   - cmake --build build/mouros_tests --clean-first && cmake --build build/mouros_tests --target test
-
-
+  # Generate coverage
+  - cmake --build build/mouros_tests --target coverage
 
 addons:
   apt:
@@ -69,3 +74,6 @@ addons:
       # arm-none-eabi gcc & newlib
       - gcc-arm-none-eabi
       - libnewlib-arm-none-eabi
+      # Documentation tools
+      - doxygen
+      - graphviz
