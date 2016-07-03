@@ -75,7 +75,7 @@ target_compile_options(${PROJECT_NAME}
 
 
 if(DOXYGEN_FOUND AND DOXYGEN_DOT_FOUND)
-    configure_file(${CMAKE_CURRENT_LIST_DIR}/doc/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
     add_custom_target(doc
         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
