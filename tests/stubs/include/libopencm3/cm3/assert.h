@@ -14,6 +14,8 @@
 
 #define cm3_assert(expr) mock_assert((int) (expr), #expr, __FILE__, __LINE__)
 
+#define cm3_assert_failed() mock_assert(0, "Reached cm3_assert_failed().", __FILE__, __LINE__)
+
 #define cm3_assert_not_reached() fail()
 
 #endif /* ASSERT_H_ */

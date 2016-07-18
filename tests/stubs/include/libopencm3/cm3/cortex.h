@@ -34,13 +34,13 @@ static inline void cm_disable_faults(void)
 
 static inline bool cm_is_masked_interrupts(void)
 {
-	return (bool) mock();
+	return mock_type(bool);
 }
 
 __attribute__((always_inline))
 static inline bool cm_is_masked_faults(void)
 {
-	return (bool) mock();
+	return mock_type(bool);
 }
 
 __attribute__((always_inline))
@@ -48,7 +48,7 @@ static inline uint32_t cm_mask_interrupts(uint32_t mask)
 {
 	check_expected(mask);
 
-	return (uint32_t) mock();
+	return mock_type(uint32_t);
 }
 
 __attribute__((always_inline))
@@ -56,7 +56,7 @@ static inline uint32_t cm_mask_faults(uint32_t mask)
 {
 	check_expected(mask);
 
-	return (uint32_t) mock();
+	return mock_type(uint32_t);
 }
 
 #define CM_ATOMIC_BLOCK()
