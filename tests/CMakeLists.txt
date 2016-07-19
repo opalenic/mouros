@@ -67,6 +67,7 @@ set_source_files_properties("${CMAKE_CURRENT_LIST_DIR}/../src/pool_alloc.c" PROP
 add_test(NAME pool_alloc COMMAND test_pool_alloc)
 set_tests_properties(pool_alloc PROPERTIES DEPENDS test_pool_alloc)
 
+add_dependencies(test_pool_alloc cmocka)
 
 
 # Covearge
