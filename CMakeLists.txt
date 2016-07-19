@@ -100,7 +100,7 @@ if(DOXYGEN_FOUND AND DOXYGEN_DOT_FOUND)
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     )
 
-    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}")
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}" OPTIONAL)
 else()
     message(WARNING "Doxygen or dot missing. Won't create doc target.")
 endif()
