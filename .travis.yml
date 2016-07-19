@@ -35,14 +35,14 @@ before_script:
   # Generate the makefiles
   - |
     mkdir build/mouros
-    mkdir build/mouros_tests
+    mkdir build/mouros-tests
   - |
     cd build/mouros
     cmake -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_TOOLCHAIN_FILE=../../cmake/arm-none-eabi-toolchain.cmake -DCHIP_FAMILY=STM32F0 -DCMAKE_BUILD_TYPE=Debug ../..
     cd ../..
   - |
-    cd build/mouros_tests
-    cmake ../../tests
+    cd build/mouros-tests
+    cmake -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_TOOLCHAIN_FILE=../../cmake/gcc-linux-x86-toolchain.cmake ../../tests
     cd ../..
 
 
@@ -52,9 +52,9 @@ script:
   # Build docs
   - cmake --build build/mouros --target mouros-doc
   # Build & run tests
-  - cmake --build build/mouros_tests --clean-first && cmake --build build/mouros_tests --target test
+  - cmake --build build/mouros-tests --clean-first && cmake --build build/mouros-tests --target test
   # Generate coverage
-  - cmake --build build/mouros_tests --target coverage
+  - cmake --build build/mouros-tests --target coverage
 
 addons:
   apt:
