@@ -40,7 +40,7 @@ void os_char_buffer_write_buf_blocking(mailbox_t *mb,
 {
 	uint32_t pos = 0;
 
-	while (pos <= buf_len) {
+	while (pos < buf_len) {
 		pos += os_mailbox_write_multiple(mb, &buf[pos], buf_len - pos);
 	}
 }
@@ -95,7 +95,7 @@ void os_char_buffer_read_buf_blocking(mailbox_t *mb,
 {
 	uint32_t pos = 0;
 
-	while (pos <= buf_len) {
+	while (pos < buf_len) {
 		pos += os_mailbox_read_multiple(mb, &buf[pos], buf_len - pos);
 	}
 }
