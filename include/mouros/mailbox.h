@@ -29,7 +29,7 @@ typedef struct mailbox {
 	/**
 	 * The size of a single mailbox message.
 	 */
-	uint8_t msg_size;
+	uint32_t msg_size;
 	/**
 	 * Internal pointer pointing to the beginning of the next message in
 	 * msg_buf that should be read.
@@ -56,15 +56,15 @@ typedef struct mailbox {
  * @param mb                  Pointer to the struct to be initialized.
  * @param msg_buf             Pointer to the memory area to be used to hold the
  *                            mailbox data.
- * @param msg_buf_len         The size of msg_buf.
+ * @param num_msgs            The number of messages in msg_buf.
  * @param msg_size            The size in bytes of a single message.
  * @param data_added_callback Optional callback that gets called every time new
  *                            data is added to the mailbox. Can be NULL.
  */
 void os_mailbox_init(mailbox_t *mb,
-                     uint8_t *msg_buf,
-                     uint32_t msg_buf_len,
-                     uint8_t msg_size,
+                     void *msg_buf,
+                     uint32_t num_msgs,
+                     uint32_t msg_size,
                      void (*data_added_callback)(void));
 
 /**

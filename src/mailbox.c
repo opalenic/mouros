@@ -40,20 +40,18 @@ static inline bool write_msg(mailbox_t *mb, const void *msg)
 }
 
 void os_mailbox_init(mailbox_t *mb,
-                     uint8_t *msg_buf,
-                     uint32_t msg_buf_len,
-                     uint8_t msg_size,
+                     void *msg_buf,
+                     uint32_t num_msgs,
+                     uint32_t msg_size,
                      void (*data_added_callback)(void))
 {
-	mb->msg_buf = msg_buf;
-	mb->msg_buf_len = msg_buf_len;
+	mb->msg_buf = (uint8_t *) msg_buf;
+	mb->msg_buf_len = num_msgs * msg_size;
 	mb->msg_size = msg_size;
 	mb->data_added = data_added_callback;
 
 	mb->read_pos = 0;
 	mb->write_pos = 0;
-
-	cm3_assert(msg_buf_len % msg_size == 0);
 }
 
 bool os_mailbox_write(mailbox_t *mb, const void *msg)
