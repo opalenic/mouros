@@ -104,7 +104,7 @@ static void __task_runner(struct tcb *task)
 		task->tasklist_next = NULL;
 		task->tasklist_prev = NULL;
 
-		task->state = STOPPED;
+		task->state = TASK_STOPPED;
 
 		os_task_yield();
 	}
@@ -157,7 +157,7 @@ bool os_task_init(task_t *task,
 	task->priority = priority;
 	task->task_func = task_func;
 	task->task_params = task_params;
-	task->state = STOPPED;
+	task->state = TASK_STOPPED;
 
 	task->name = name;
 	task->stack_base = (int *)stack_base;
@@ -187,11 +187,11 @@ bool os_task_add(task_t *new_task)
 	CM_ATOMIC_CONTEXT();
 
 
-	if (new_task->state != STOPPED) {
+	if (new_task->state != TASK_STOPPED) {
 		return false;
 	}
 
-	new_task->state = RUNNABLE;
+	new_task->state = TASK_RUNNABLE;
 
 
 	if (all_tasks.first == NULL) {
@@ -244,7 +244,7 @@ void os_task_yield(void)
 
 void os_task_suspend_self(void)
 {
-	current_task->state = SUSPENDED;
+	current_task->state = TASK_SUSPENDED;
 
 	os_task_yield();
 }
@@ -253,11 +253,11 @@ bool os_task_unsuspend(task_t *task)
 {
 	CM_ATOMIC_CONTEXT();
 
-	if (task->state != SUSPENDED) {
+	if (task->state != TASK_SUSPENDED) {
 		return false;
 	}
 
-	task->state = RUNNABLE;
+	task->state = TASK_RUNNABLE;
 
 	sched_add_to_runqueue_tail(task);
 
@@ -273,7 +273,7 @@ void os_task_sleep(uint32_t num_ticks)
 	CM_ATOMIC_CONTEXT();
 
 	current_task->wakeup_time = os_tick_count + num_ticks;
-	current_task->state = SLEEPING;
+	current_task->state = TASK_SLEEPING;
 
 	sched_add_to_sleepqueue(current_task);
 

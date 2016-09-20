@@ -63,7 +63,7 @@ void os_resource_acquire(resource_t *res)
 			return;
 
 		} else {
-			current_task->state = WAITING_FOR_RESOURCE;
+			current_task->state = TASK_WAITING_FOR_RESOURCE;
 
 			insert_waiting_task(res);
 
@@ -88,7 +88,7 @@ void os_resource_release(resource_t *res)
 		res->first_waiting = first->next_task;
 
 		first->next_task = NULL;
-		first->state = RUNNABLE;
+		first->state = TASK_RUNNABLE;
 
 		sched_add_to_runqueue_head(first);
 

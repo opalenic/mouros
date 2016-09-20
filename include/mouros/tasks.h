@@ -68,28 +68,28 @@ typedef struct tcb {
 		/**
 		 * The task is ready to be run.
 		 */
-		RUNNABLE = 0,
+		TASK_RUNNABLE = 0,
 		/**
 		 * The task is waiting for a resource to become available.
 		 */
-		WAITING_FOR_RESOURCE,
+		TASK_WAITING_FOR_RESOURCE,
 		/**
 		 * The task is sleeping and will again be scheduled once the
 		 * set sleep duration has elapsed.
 		 */
-		SLEEPING,
+		TASK_SLEEPING,
 		/**
 		 * The task is suspended and won't be scheduled.
 		 */
-		SUSPENDED,
+		TASK_SUSPENDED,
 		/**
 		 *  The task is currently being executed.
 		 */
-		RUNNING,
+		TASK_RUNNING,
 		/**
 		 * The task has returned and is done executing.
 		 */
-		STOPPED
+		TASK_STOPPED
 	} state;
 
 	/**

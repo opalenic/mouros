@@ -96,7 +96,7 @@ static void wakeup_tasks(void)
 		sleepqueue_head = sleeping->next_task;
 		sleeping->next_task = NULL;
 
-		sleeping->state = RUNNABLE;
+		sleeping->state = TASK_RUNNABLE;
 		sched_add_to_runqueue_head(sleeping);
 
 		sleeping = sleepqueue_head;
@@ -116,7 +116,7 @@ void sched_start_tasks(void)
 {
 	current_task = take_highest_prio_task();
 
-	current_task->state = RUNNING;
+	current_task->state = TASK_RUNNING;
 
 	int task_struct = current_task->stack[8];
 	int task_runner = current_task->stack[14];
@@ -227,15 +227,15 @@ void pend_sv_handler(void)
 
 	SCB_ICSR |= SCB_ICSR_PENDSVCLR;
 
-	if (current_task->state == RUNNING) {
-		current_task->state = RUNNABLE;
+	if (current_task->state == TASK_RUNNING) {
+		current_task->state = TASK_RUNNABLE;
 		sched_add_to_runqueue_tail(current_task);
 	}
 
 	current_task = take_highest_prio_task();
 	_impure_ptr = &current_task->reent;
 
-	current_task->state = RUNNING;
+	current_task->state = TASK_RUNNING;
 
 	SCHED_POP_STACK_AND_BRANCH();
 }
@@ -256,12 +256,12 @@ void sys_tick_handler(void)
 
 	sched_add_to_runqueue_tail(current_task);
 
-	current_task->state = RUNNABLE;
+	current_task->state = TASK_RUNNABLE;
 
 	current_task = take_highest_prio_task();
 	_impure_ptr = &current_task->reent;
 
-	current_task->state = RUNNING;
+	current_task->state = TASK_RUNNING;
 
 	diag_task_switch(os_tick_count, prev_id, current_task->id);
 
