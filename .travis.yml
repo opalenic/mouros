@@ -10,11 +10,18 @@ before_install:
     mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
 
   # Get cmake v3.5
-  - |
-    CMAKE_URL="https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz"
-    mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-    export PATH=${DEPS_DIR}/cmake/bin:${PATH}
-    cd ..
+  - CMAKE_URL="https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz"
+  - mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+  - export PATH=${DEPS_DIR}/cmake/bin:${PATH}
+  - cd ..
+
+  # Get rust
+  - curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
+  - export PATH=~/.cargo/bin:${PATH}
+  - rustup component add rust-src
+
+  # Get xargo
+  - cargo install xargo
 
   # Pystache needed for generation of MourOS diagnostic code
   - sudo pip install pystache
@@ -36,14 +43,14 @@ before_script:
   - |
     mkdir build/mouros
     mkdir build/mouros-tests
-  - |
-    cd build/mouros
-    cmake -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_TOOLCHAIN_FILE=../../cmake/arm-none-eabi-toolchain.cmake -DCHIP_FAMILY=STM32F0 -DCMAKE_BUILD_TYPE=Debug ../..
-    cd ../..
-  - |
-    cd build/mouros-tests
-    cmake -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_TOOLCHAIN_FILE=../../cmake/gcc-linux-x86-toolchain.cmake ../../tests
-    cd ../..
+
+  - cd build/mouros
+  - cmake -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_TOOLCHAIN_FILE=../../cmake/arm-none-eabi-toolchain.cmake -DCHIP_FAMILY=STM32F0 -DCMAKE_BUILD_TYPE=Debug ../..
+  - cd ../..
+
+  - cd build/mouros-tests
+  - cmake -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_TOOLCHAIN_FILE=../../cmake/gcc-linux-x86-toolchain.cmake ../../tests
+  - cd ../..
 
 
 script:
@@ -55,6 +62,10 @@ script:
   - cmake --build build/mouros-tests --clean-first && cmake --build build/mouros-tests --target test
   # Generate coverage
   - cmake --build build/mouros-tests --target coverage
+  # Build the Rust bindings library
+  - cd rust
+  - xargo build --target cortex-m0 --lib
+  - cd ..
 
 addons:
   apt:
