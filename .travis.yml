@@ -64,7 +64,7 @@ script:
   - cmake --build build/mouros-tests --target coverage
   # Build the Rust bindings library
   - cd rust
-  - xargo build --target cortex-m0 --lib
+  - xargo build --target thumbv6m-none-eabi --lib
   - cd ..
 
 addons:
