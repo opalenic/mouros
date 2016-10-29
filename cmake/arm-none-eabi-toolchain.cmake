@@ -2,7 +2,6 @@
 set(TARGET_TRIPLET "arm-none-eabi")
 
 set(CMAKE_C_COMPILER "/usr/bin/${TARGET_TRIPLET}-gcc")
-set(CMAKE_SYSROOT "/usr/${TARGET_TRIPLET}")
 
 
 set(CMAKE_SYSTEM_PROCESSOR "arm")
