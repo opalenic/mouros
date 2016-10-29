@@ -45,7 +45,7 @@ before_script:
     mkdir build/mouros-tests
 
   - cd build/mouros
-  - cmake -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_TOOLCHAIN_FILE=../../cmake/arm-none-eabi-toolchain.cmake -DCHIP_FAMILY=STM32F0 -DCMAKE_BUILD_TYPE=Debug ../..
+  - cmake -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_TOOLCHAIN_FILE=../../cmake/arm-none-eabi-toolchain.cmake -DCHIP_FAMILY=${CHIP_FAMILY} -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ../..
   - cd ../..
 
   - cd build/mouros-tests
@@ -64,7 +64,7 @@ script:
   - cmake --build build/mouros-tests --target coverage
   # Build the Rust bindings library
   - cd rust
-  - xargo build --target thumbv6m-none-eabi --lib
+  - xargo build --target ${RUST_TARGET} --lib
   - cd ..
 
 addons:
@@ -78,3 +78,22 @@ addons:
       # Documentation tools
       - doxygen
       - graphviz
+
+env:
+  - |
+    CHIP_FAMILY=STM32F0
+    RUST_TARGET=thumbv6m-none-eabi
+    BUILD_TYPE=Debug
+  - |
+    CHIP_FAMILY=STM32F0
+    RUST_TARGET=thumbv6m-none-eabi
+    BUILD_TYPE=Release
+
+  - |
+    CHIP_FAMILY=STM32F4
+    RUST_TARGET=thumbv7em-none-eabihf
+    BUILD_TYPE=Debug
+  - |
+    CHIP_FAMILY=STM32F4
+    RUST_TARGET=thumbv7em-none-eabihf
+    BUILD_TYPE=Release
