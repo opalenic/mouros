@@ -153,6 +153,13 @@ void os_init(void);
  * @param task_func   The function to execute in the task.
  * @param task_params Pointer to parameters passed to task_func.
  * @return True on successful struct initialization, false otherwise.
+ *
+ * @note The stack base should be 8 byte aligned. The ARM EABI insists on the
+ *       stack being 8 byte aligned, and not having it aligned can cause major,
+ *       hard to debug problems. For this reason, os_task_init() performs a
+ *       check on the stack base, and adjusts it if needed. Of course this would
+ *       mean the task will be working with a slightly smaller stack than you
+ *       would expect.
  */
 bool os_task_init(task_t *task,
                   const char *name,

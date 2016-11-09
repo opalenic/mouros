@@ -160,10 +160,17 @@ bool os_task_init(task_t *task,
 	task->state = TASK_STOPPED;
 
 	task->name = name;
-	task->stack_base = (int *)stack_base;
-	task->stack_size = stack_size;
 
-	task->stack = (int *) (stack_base + stack_size - 64);
+	// Make sure the stack is 8 byte aligned, even if it means not using all
+	// the provided stack memory.
+	uint32_t aligned_stack_top = ((uint32_t) stack_base + stack_size) & (uint32_t) ~0b111;
+
+	task->stack_base = (int *) stack_base;
+	task->stack_size = aligned_stack_top - (uint32_t) stack_base;
+
+	// The top of the empty stack will contain the frame that gets popped
+	// once the task is first scheduled.
+	task->stack = (int *) (aligned_stack_top - 64);
 
 	for (uint8_t i = 0; i < 16; i++) {
 		task->stack[i] = 0;
