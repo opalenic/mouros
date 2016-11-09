@@ -6,8 +6,9 @@
  */
 
 #include <reent.h> // Function declarations & reent structure.
-
 #include <errno.h> // Error codes.
+
+#include <libopencm3/cm3/cortex.h> // For the atomic macros.
 
 #include "diag/diag.h" // For the diag log functions.
 
@@ -294,12 +295,34 @@ int _rename_r(struct _reent *reent, const char *oldpath, const char *newpath)
  *                  by.
  * @return Returns a pointer to the start of the new memory or -1 on error.
  */
+
 void *_sbrk_r(struct _reent *reent, ptrdiff_t increment)
 {
 	diag_syscall_sbrk(increment);
 
-	reent->_errno = ENOMEM;
-	return (void *) -1;
+	CM_ATOMIC_CONTEXT();
+
+	// Declared in linker script. Address in RAM right after the space for
+	// statically allocated variables.
+	extern char end;
+	static char *heap_end = &end;
+
+	char *main_stack_pointer = 0;
+	asm("mrs %[msp_content], msp"
+	    : [msp_content] "=r" (main_stack_pointer));
+
+
+	if (heap_end + increment > main_stack_pointer)
+	{
+		reent->_errno = ENOMEM;
+		return (void *) -1;
+	}
+
+	char *prev_heap_end = heap_end;
+
+	heap_end += increment;
+
+	return (void *) prev_heap_end;
 }
 
 /**
