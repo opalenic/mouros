@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(asm)]
 
 // TODO Remove this once the libc crate becomes buildable on arm-none-eabi with no_std.
 #[repr(u8)]
@@ -9,7 +10,6 @@ pub enum CVoid {
     #[doc(hidden)]
     __Variant2,
 }
-
 
 pub mod mailbox;
 pub mod tasks;
