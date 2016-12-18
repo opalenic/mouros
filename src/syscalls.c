@@ -17,7 +17,19 @@ char *__env[1] = { 0 };
 /** Minimal implementation of environment variables. */
 char **environ = __env;
 
+/**
+ * Declared in linker script. Address in RAM right after the space for
+ * statically allocated variables.
+ */
+extern char end;
+
+/**
+ * The current top of the heap.
+ */
+static char *heap_end = &end;
+
 void _exit(int status);
+
 
 /**
  * Called when a process exits.
@@ -295,17 +307,11 @@ int _rename_r(struct _reent *reent, const char *oldpath, const char *newpath)
  *                  by.
  * @return Returns a pointer to the start of the new memory or -1 on error.
  */
-
 void *_sbrk_r(struct _reent *reent, ptrdiff_t increment)
 {
-	diag_syscall_sbrk(increment);
+	diag_syscall_sbrk((uint32_t) &end, (uint32_t) heap_end, increment);
 
 	CM_ATOMIC_CONTEXT();
-
-	// Declared in linker script. Address in RAM right after the space for
-	// statically allocated variables.
-	extern char end;
-	static char *heap_end = &end;
 
 	char *main_stack_pointer = 0;
 	asm("mrs %[msp_content], msp"

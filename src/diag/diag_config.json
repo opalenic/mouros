@@ -208,8 +208,16 @@
 	},
 	{
 		"name": "SYSCALL_SBRK",
-		"text": "Syscall: _sbrk_r: Increment: {increment}",
+		"text": "Syscall: _sbrk_r: Heap base: {base}, Current top: {top}, Increment: {increment}",
 		"args": [
+			{
+				"name": "base",
+				"type": "uint32_t"
+			},
+			{
+				"name": "top",
+				"type": "uint32_t"
+			},
 			{
 				"name": "increment",
 				"type": "int32_t"
