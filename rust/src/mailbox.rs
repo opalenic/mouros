@@ -1,14 +1,12 @@
 #![allow(dead_code)]
 
-extern crate core;
-
-use self::core::mem;
-use self::core::marker;
+use core::mem;
+use core::marker;
 use super::CVoid;
 
 #[repr(C)]
 #[derive(Debug)]
-struct MailboxInt {
+pub struct MailboxRaw {
     msg_buf: *mut u8,
     msg_buf_len: u32,
     msg_size: u32,
@@ -17,47 +15,44 @@ struct MailboxInt {
     data_added: Option<extern "C" fn()>,
 }
 
-impl Default for MailboxInt {
-    fn default() -> Self { unsafe { mem::zeroed() } }
+impl Default for MailboxRaw {
+    fn default() -> Self {
+        unsafe { mem::zeroed() }
+    }
 }
 
 #[repr(C)]
 #[derive(Debug)]
 pub struct Mailbox<T> {
-    mb: MailboxInt,
-    data_type_marker: marker::PhantomData<T>
+    mb: MailboxRaw,
+    data_type_marker: marker::PhantomData<T>,
 }
 
 impl<T> Default for Mailbox<T> {
-    fn default() -> Self { unsafe { mem::zeroed() } }
+    fn default() -> Self {
+        unsafe { mem::zeroed() }
+    }
 }
 
 
 #[link (name = "mouros")]
 extern "C" {
-    fn os_mailbox_init(mb: *mut MailboxInt,
+    fn os_mailbox_init(mb: *mut MailboxRaw,
                        msg_buf: *mut CVoid,
                        msg_buf_len: u32,
                        msg_size: u32,
-                       data_added_callback: Option<extern fn()>);
+                       data_added_callback: Option<extern "C" fn()>);
 
-    fn os_mailbox_write(mb: *mut MailboxInt,
-                        msg: *const CVoid) -> u8;
+    fn os_mailbox_write(mb: *mut MailboxRaw, msg: *const CVoid) -> u8;
 
-    fn os_mailbox_write_multiple(mb: *mut MailboxInt,
-                                 msgs: *const CVoid,
-                                 msg_num: u32) -> u32;
+    fn os_mailbox_write_multiple(mb: *mut MailboxRaw, msgs: *const CVoid, msg_num: u32) -> u32;
 
-    fn os_mailbox_read(mb: *mut MailboxInt,
-                       out: *mut CVoid) -> u8;
+    fn os_mailbox_read(mb: *mut MailboxRaw, out: *mut CVoid) -> u8;
 
-    fn os_mailbox_read_multiple(mb: *mut MailboxInt,
-                                out: *mut CVoid,
-                                out_msg_num: u32) -> u32;
+    fn os_mailbox_read_multiple(mb: *mut MailboxRaw, out: *mut CVoid, out_msg_num: u32) -> u32;
 }
 
 impl<T> Mailbox<T> {
-
     pub fn new(buf: &mut [T]) -> Mailbox<T> {
         let mut mb = Mailbox::default();
 
@@ -73,9 +68,7 @@ impl<T> Mailbox<T> {
     }
 
     pub fn write(&mut self, msg: T) -> bool {
-        unsafe {
-            os_mailbox_write(&mut self.mb, &msg as *const T as *const CVoid) != 0
-        }
+        unsafe { os_mailbox_write(&mut self.mb, &msg as *const T as *const CVoid) != 0 }
     }
 
     pub fn write_multiple(&mut self, msgs: &[T]) -> u32 {
@@ -104,5 +97,9 @@ impl<T> Mailbox<T> {
                                      out_buf.as_mut_ptr() as *mut CVoid,
                                      out_buf.len() as u32)
         }
+    }
+
+    pub unsafe fn get_raw_mb_struct(&mut self) -> *mut MailboxRaw {
+        &mut self.mb
     }
 }
