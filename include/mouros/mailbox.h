@@ -116,5 +116,66 @@ uint32_t os_mailbox_read_multiple(mailbox_t *mb,
                                   void *out,
                                   uint32_t out_msg_num);
 
+/**
+ * Atomic version of os_mailbox_write.
+ *
+ * Atomicity is achieved by disabling interrupts, and the regular version is
+ * atomic for the single producer/single consumer case, so only use this if
+ * it's really needed.
+ *
+ * @param mb  Pointer to the mailbox struct.
+ * @param msg Pointer to the message to be inserted.
+ * @return True if the message was successfully added, false otherwise.
+ */
+bool os_mailbox_write_atomic(mailbox_t *mb, const void *msg);
+
+/**
+ * Atomic version of os_mailbox_write_multiple.
+ *
+ * Atomicity is achieved by disabling interrupts, and the regular version is
+ * atomic for the single producer/single consumer case, so only use this if
+ * it's really needed.
+ *
+ * @param mb      Pointer to the mailbox struct.
+ * @param msgs    Pointer to the messages to be added.
+ * @param msg_num The number of messages in msgs.
+ * @return The number of bytes successfully inserted into the buffer. This
+ *         should be equal to in_len if all data was inserted.
+ */
+uint32_t os_mailbox_write_multiple_atomic(mailbox_t *mb,
+                                          const void *msgs,
+                                          uint32_t msg_num);
+
+/**
+ * Atomic version of os_mailbox_read.
+ *
+ * Atomicity is achieved by disabling interrupts, and the regular version is
+ * atomic for the single producer/single consumer case, so only use this if
+ * it's really needed.
+ *
+ * @param mb  Pointer to the mailbox struct.
+ * @param out Pointer to a place in memory to store the read message.
+ * @return True if there was at least one message in the mailbox. It will be
+ *         stored in the location pointed to by out. False if the mailbox was
+ *         empty.
+ */
+bool os_mailbox_read_atomic(mailbox_t *mb, void *out);
+
+/**
+ * Atomic version of os_mailbox_read_multiple.
+ *
+ * Atomicity is achieved by disabling interrupts, and the regular version is
+ * atomic for the single producer/single consumer case, so only use this if
+ * it's really needed.
+ *
+ * @param mb          Pointer to the mailbox struct.
+ * @param out         Pointer to the data array
+ * @param out_msg_num The number of messages that can be stored in out.
+ * @return Returns the number of read messages.
+ */
+uint32_t os_mailbox_read_multiple_atomic(mailbox_t *mb,
+                                         void *out,
+                                         uint32_t out_msg_num);
+
 
 #endif /* MOUROS_MAILBOX_H_ */

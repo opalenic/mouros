@@ -11,6 +11,7 @@
 #include <mouros/mailbox.h> // For the mailbox functions & data types.
 
 #include <libopencm3/cm3/assert.h> // For the assert macros.
+#include <libopencm3/cm3/cortex.h> // For the atomic macros.
 
 /**
  * Inserts a single message into the mailbox.
@@ -118,3 +119,36 @@ uint32_t os_mailbox_read_multiple(mailbox_t *mb,
 
 	return i;
 }
+
+bool os_mailbox_write_atomic(mailbox_t *mb, const void *msg)
+{
+	CM_ATOMIC_CONTEXT();
+
+	return os_mailbox_write(mb, msg);
+}
+
+uint32_t os_mailbox_write_multiple_atomic(mailbox_t *mb,
+                                          const void *msgs,
+                                          uint32_t msg_num)
+{
+	CM_ATOMIC_CONTEXT();
+
+	return os_mailbox_write_multiple(mb, msgs, msg_num);
+}
+
+bool os_mailbox_read_atomic(mailbox_t *mb, void *out)
+{
+	CM_ATOMIC_CONTEXT();
+
+	return os_mailbox_read(mb, out);
+}
+
+uint32_t os_mailbox_read_multiple_atomic(mailbox_t *mb,
+                                         void *out,
+                                         uint32_t out_msg_num)
+{
+	CM_ATOMIC_CONTEXT();
+
+	return os_mailbox_read_multiple(mb, out, out_msg_num);
+}
+
