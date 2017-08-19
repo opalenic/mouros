@@ -13,3 +13,4 @@ pub enum CVoid {
 
 pub mod mailbox;
 pub mod tasks;
+pub mod pool_alloc;
