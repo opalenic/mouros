@@ -3,6 +3,9 @@
          non_upper_case_globals,
          non_snake_case)]
 
+use core::cell::UnsafeCell;
+use core::ops::{Deref, DerefMut};
+
 pub enum Task {}
 
 extern "C" {
@@ -46,7 +49,7 @@ unsafe fn mask_interrupts(mask: u32) -> u32 {
 }
 
 impl CriticalSection {
-    pub fn start() -> CriticalSection {
+    pub fn new() -> CriticalSection {
         CriticalSection(unsafe { mask_interrupts(1) })
     }
 }
@@ -62,8 +65,51 @@ impl Drop for CriticalSection {
 #[macro_export]
 macro_rules! critical {
     ($code:block) => ({
-        let __mouros_critical_section = $crate::tasks::CriticalSection::start();
+        let __mouros_critical_section = $crate::tasks::CriticalSection::new();
 
         $code
     })
 }
+
+
+
+pub struct CriticalLock<T> {
+    data: UnsafeCell<T>,
+}
+
+pub struct CriticalLockGuard<'lock, T: 'lock> {
+    lock: &'lock CriticalLock<T>,
+    crit_section: CriticalSection,
+}
+
+
+impl<T> CriticalLock<T> {
+    pub fn new(item: T) -> CriticalLock<T> {
+        CriticalLock { data: UnsafeCell::new(item) }
+    }
+
+    pub fn lock(&self) -> CriticalLockGuard<T> {
+        CriticalLockGuard {
+            lock: &self,
+            crit_section: CriticalSection::new(),
+        }
+    }
+}
+
+impl<'lock, T> Deref for CriticalLockGuard<'lock, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        unsafe { &*self.lock.data.get() }
+    }
+}
+
+impl<'lock, T> DerefMut for CriticalLockGuard<'lock, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        unsafe { &mut *self.lock.data.get() }
+    }
+}
+
+
+unsafe impl<T> Send for CriticalLock<T> {}
+unsafe impl<T> Sync for CriticalLock<T> {}
