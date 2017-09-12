@@ -57,7 +57,7 @@ extern "C" {
 
 impl<'mem, T> Mailbox<'mem, T> {
     pub fn new(buf: &'mem mut [T]) -> Mailbox<T> {
-        let mut mb = Mailbox::default();
+        let mb = Mailbox::default();
 
         unsafe {
             os_mailbox_init(
