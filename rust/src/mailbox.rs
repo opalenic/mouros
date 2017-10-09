@@ -55,7 +55,8 @@ extern "C" {
     fn os_mailbox_read_multiple(mb: *mut MailboxRaw, out: *mut CVoid, out_msg_num: u32) -> u32;
 }
 
-impl<'mem, T> Mailbox<'mem, T> {
+impl<'mem, T> Mailbox<'mem, T>
+{
     pub fn new(buf: &'mem mut [T]) -> Mailbox<T> {
         let mb = Mailbox::default();
 
@@ -114,43 +115,67 @@ impl<'mem, T> Mailbox<'mem, T> {
 }
 
 
+pub struct SendError<T>(pub T);
+pub struct RecvError;
 
 pub struct RxChannelSpsc<'mb, 'mem: 'mb, T: 'mem> {
-    mb: &'mb Mailbox<'mem, T>,
+    mb: UnsafeCell<&'mb mut MailboxRaw>,
     _lifetime_marker: PhantomData<&'mb mut Mailbox<'mem, T>>,
 }
 
 impl<'mb, 'mem, T> RxChannelSpsc<'mb, 'mem, T> {
-    pub fn read(&self) -> Option<T> {
-        self.mb.read()
+    pub fn recv(&self) -> T {
+        unsafe {
+            let mut tmp = mem::uninitialized();
+
+            while os_mailbox_read(*self.mb.get(), &mut tmp as *mut T as *mut CVoid) != 0 {}
+
+            tmp
+        }
     }
 
-    pub fn read_multiple(&self, out_buf: &mut [T]) -> u32 {
-        self.mb.read_multiple(out_buf)
+    pub fn try_recv(&self) -> Result<T, RecvError> {
+        unsafe {
+            let mut tmp = mem::uninitialized();
+
+            if os_mailbox_read(*self.mb.get(), &mut tmp as *mut T as *mut CVoid) != 0 {
+                Ok(tmp)
+            } else {
+                Err(RecvError)
+            }
+        }
     }
 
     pub unsafe fn get_raw_mailbox(&self) -> *mut MailboxRaw {
-        self.mb.get_raw_mailbox()
+        *self.mb.get()
     }
 }
 
 
 pub struct TxChannelSpsc<'mb, 'mem: 'mb, T: 'mem> {
-    mb: &'mb Mailbox<'mem, T>,
+    mb: UnsafeCell<&'mb mut MailboxRaw>,
     _lifetime_marker: PhantomData<&'mb mut Mailbox<'mem, T>>,
 }
 
 impl<'mb, 'mem, T> TxChannelSpsc<'mb, 'mem, T> {
-    pub fn write(&self, msg: T) -> bool {
-        self.mb.write(msg)
-    }
+    pub fn send(&self, msg: T) {
+        unsafe {
+           while os_mailbox_write(*self.mb.get(), &msg as *const T as *const CVoid) != 0 {}
+        }
+     }
 
-    pub fn write_multiple(&self, msgs: &[T]) -> u32 {
-        self.mb.write_multiple(msgs)
+    pub fn try_send(&self, msg: T) -> Result<(), SendError<T>> {
+        unsafe {
+            if os_mailbox_write(*self.mb.get(), &msg as *const T as *const CVoid) != 0 {
+                Ok(())
+            } else {
+                Err(SendError(msg))
+            }
+        }
     }
 
     pub unsafe fn get_raw_mailbox(&self) -> *mut MailboxRaw {
-        self.mb.get_raw_mailbox()
+        *self.mb.get()
     }
 }
 
@@ -158,14 +183,16 @@ impl<'mb, 'mem, T> TxChannelSpsc<'mb, 'mem, T> {
 pub fn channel_spsc<'mb, 'mem, T>(
     mailbox: &'mb mut Mailbox<'mem, T>,
 ) -> (RxChannelSpsc<'mb, 'mem, T>, TxChannelSpsc<'mb, 'mem, T>) {
-    (
-        RxChannelSpsc {
-            mb: mailbox,
-            _lifetime_marker: PhantomData,
-        },
-        TxChannelSpsc {
-            mb: mailbox,
-            _lifetime_marker: PhantomData,
-        },
-    )
+    unsafe {
+        (
+            RxChannelSpsc {
+                mb: UnsafeCell::new(&mut *mailbox.get_raw_mailbox()),
+                _lifetime_marker: PhantomData,
+            },
+            TxChannelSpsc {
+                mb: UnsafeCell::new(&mut *mailbox.get_raw_mailbox()),
+                _lifetime_marker: PhantomData,
+            },
+        )
+    }
 }
