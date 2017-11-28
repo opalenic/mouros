@@ -46,6 +46,10 @@
 // When the FPU isn't used, only the core MCU state needs to be saved.
 #define IDLE_TASK_STACK_SIZE 128
 #endif
+
+static uint32_t us_per_tick = 0;
+static uint32_t systicks_per_us = 0;
+
 bool os_is_initialized = false;
 
 /**
@@ -228,6 +232,9 @@ void os_tasks_start(uint32_t tick_freq)
 
 	systick_set_frequency(tick_freq, rcc_ahb_frequency);
 
+	us_per_tick = 1000000 / tick_freq;
+	systicks_per_us = (systick_get_reload() + 1) / us_per_tick;
+
 // Silence warning because of a hack libopencm3 did. (NVIC_SYSTICK_IRQ &
 // NVIC_PENDSV_IRQ are negative, and nvic_set_priority() expects an unsigned)
 #pragma GCC diagnostic push
@@ -286,6 +293,31 @@ void os_task_sleep(uint32_t num_ticks)
 
 	os_task_yield();
 }
+
+void os_task_wait_us(uint64_t wait_time_us)
+{
+	uint64_t whole_os_ticks = wait_time_us / us_per_tick;
+	uint32_t remainder_systicks = (uint32_t) (wait_time_us % us_per_tick) * systicks_per_us;
+
+	uint64_t wait_until_os_ticks = 0;
+	uint32_t wait_until_systicks = 0;
+
+	CM_ATOMIC_BLOCK() {
+		wait_until_systicks = systick_get_value() - remainder_systicks;
+		wait_until_os_ticks = os_tick_count + whole_os_ticks;
+	}
+
+	uint32_t reload_val = systick_get_reload();
+	if (wait_until_systicks > reload_val) {
+		wait_until_os_ticks += 1;
+		wait_until_systicks += reload_val;
+	}
+
+	while ((os_tick_count < wait_until_os_ticks) ||
+	       ((os_tick_count == wait_until_os_ticks) &&
+	        (systick_get_value() > wait_until_systicks)));
+}
+
 
 void os_set_diagnostics(uint8_t (*diag_send_func)(uint8_t *msg_buf,
                                                   uint8_t msg_buf_len),

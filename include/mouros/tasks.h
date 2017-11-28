@@ -183,6 +183,9 @@ bool os_task_add(task_t *task);
  *
  * @note This function does not return.
  *
+ * @warning Frequencies greater than 1MHz aren't supported. (But anything above
+ *          a few kHz probably doesn't make sense anyway)
+ *
  * @param tick_freq The frequency at which to switch tasks.
  */
 void os_tasks_start(uint32_t tick_freq);
@@ -220,6 +223,18 @@ bool os_task_unsuspend(task_t *task);
  *                  for.
  */
 void os_task_sleep(uint32_t num_ticks);
+
+/**
+ * This function will active wait for the supplied number of microseconds. The
+ * task may get preempted by the scheduler, in which case the actual wait time
+ * may be greater.
+ *
+ * @note Must not be called inside a critical section (i.e. with the scheduler
+ *       disabled)!
+ *
+ * @param wait_time_us The number of microseconds to wait.
+ */
+void os_task_wait_us(uint64_t wait_time_us);
 
 /**
  * This function registers send and error functions for diagnostic logging.
