@@ -326,6 +326,11 @@ void os_set_diagnostics(uint8_t (*diag_send_func)(uint8_t *msg_buf,
 	diag_init(diag_send_func, diag_error_func);
 }
 
+uint64_t os_get_tick_count(void)
+{
+	CM_ATOMIC_CONTEXT();
 
+	return os_tick_count;
+}
 
 

@@ -253,5 +253,9 @@ void os_set_diagnostics(uint8_t (*diag_send_func)(uint8_t *msg_buf,
                                                   uint8_t msg_buf_len),
                         void (*diag_error_func)(void));
 
+/**
+ * This function returns the number of system ticks since scheduling started.
+ */
+uint64_t os_get_tick_count(void);
 
 #endif /* MOUROS_TASKS_H_ */

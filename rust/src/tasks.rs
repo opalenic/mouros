@@ -18,6 +18,7 @@ extern "C" {
     fn os_task_unsuspend(task: *mut Task) -> u8;
     fn os_task_sleep(num_ticks: u32);
     fn os_task_wait_us(wait_time_us: u64);
+    fn os_get_tick_count() -> u64;
 }
 
 pub fn yield_cpu() {
@@ -38,6 +39,10 @@ pub fn sleep(num_ticks: u32) {
 
 pub fn wait_us(wait_time_us: u64) {
     unsafe { os_task_wait_us(wait_time_us) }
+}
+
+pub fn get_tick_count() -> u64 {
+    unsafe { os_get_tick_count() }
 }
 
 
