@@ -1,5 +1,5 @@
 [package]
-name = "mouros-rust-bindings"
+name = "mouros"
 version = "0.1.0"
 authors = ["Ondrej Palenicek <ondrej.palenicek@gmail.com>"]
 
