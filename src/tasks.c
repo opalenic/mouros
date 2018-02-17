@@ -172,6 +172,12 @@ bool os_task_init(task_t *task,
 	task->stack_base = (int *) stack_base;
 	task->stack_size = aligned_stack_top - (uint32_t) stack_base;
 
+#ifdef ENABLE_STACK_PAINTING
+	for (uint32_t i = 0; i < task_stack_size; i++) {
+		stack_base[i] = 0xa5;
+	}
+#endif
+
 	// The top of the empty stack will contain the frame that gets popped
 	// once the task is first scheduled.
 	task->stack = (int *) (aligned_stack_top - 64);
@@ -318,6 +324,36 @@ void os_task_wait_us(uint64_t wait_time_us)
 	        (systick_get_value() > wait_until_systicks)));
 }
 
+uint32_t os_get_stack_max_size(task_t *task)
+{
+	return task->stack_size;
+}
+
+uint32_t os_get_stack_curr_size(task_t *task)
+{
+	return (uint32_t) (task->stack - task->stack_base);
+}
+
+uint32_t os_get_stack_max_usage(task_t *task)
+{
+#ifdef ENABLE_STACK_PAINTING
+	uint8_t *stack_ptr = NULL;
+
+	for (stack_ptr = ((uint8_t *) task->stack_base) + task->stack_size;
+	     stack_ptr >= (uint8_t *) task->stack_base;
+	     stack_ptr--) {
+
+		if (*stack_ptr != 0xa5) {
+			break;
+		}
+	}
+
+	return (uint32_t) ((((uint8_t *) task->stack_base) + task->stack_size) - stack_ptr);
+#else
+	(void) sizeof(task);
+	return 0;
+#endif
+}
 
 void os_set_diagnostics(uint8_t (*diag_send_func)(uint8_t *msg_buf,
                                                   uint8_t msg_buf_len),

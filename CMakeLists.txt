@@ -70,6 +70,10 @@ if(ENABLE_DIAGNOSTICS)
     target_sources(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src/diag/diag.c")
 endif()
 
+if(ENABLE_STACK_PAINTING)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC "ENABLE_STACK_PAINTING")
+endif()
+
 
 target_compile_options(${PROJECT_NAME}
     PUBLIC "-std=gnu11"

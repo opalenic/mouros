@@ -237,6 +237,39 @@ void os_task_sleep(uint32_t num_ticks);
 void os_task_wait_us(uint64_t wait_time_us);
 
 /**
+ * This function returns the maximum usable stack size of the specified task.
+ *
+ * @param task The task for which to return the stack size.
+ *
+ * @return The stack size of the specified task.
+ */
+uint32_t os_get_stack_max_size(task_t *task);
+
+/**
+ * This function returns the current size of the stack being used by the
+ * specified task.
+ *
+ * @param task The task for which to return the stack usage.
+ *
+ * @return The stack usage of the specified task.
+ */
+uint32_t os_get_stack_curr_size(task_t *task);
+
+/**
+ * This function returns the maximum usage level of the specified task's stack.
+ *
+ * @note The function relies on stack painting being enabled (by defining
+ *       ENABLE_STACK_PAINTING). If it's not enabled, it returns 0.
+ *
+ * @param task The task for which to return the maximum stack usage.
+ *
+ * @return The maximum usage of the task's stack so far if
+ *         ENABLE_STACK_PAINTING is enabled, or 0 if ENABLE_STACK_PAINTING is
+ *         disabled.
+ */
+uint32_t os_get_stack_max_usage(task_t *task);
+
+/**
  * This function registers send and error functions for diagnostic logging.
  *
  * The send function should take a pointer to a byte buffer and the length of
