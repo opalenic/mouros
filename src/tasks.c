@@ -72,6 +72,7 @@ static void __idle_task(void *params)
 	(void) params;
 
 	while(true) {
+#if DIAG_ENABLE
 		uint64_t curr_tick_count = os_get_tick_count();
 		if (curr_tick_count % 10000 == 0) {
 			CM_ATOMIC_BLOCK() {
@@ -88,6 +89,7 @@ static void __idle_task(void *params)
 			}
 			while (os_get_tick_count() == curr_tick_count);
 		}
+#endif
 	}
 }
 
