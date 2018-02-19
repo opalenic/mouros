@@ -259,13 +259,12 @@ uint32_t os_get_stack_curr_size(task_t *task);
  * This function returns the maximum usage level of the specified task's stack.
  *
  * @note The function relies on stack painting being enabled (by defining
- *       ENABLE_STACK_PAINTING). If it's not enabled, it returns 0.
+ *       DIAG_ENABLE). If it's not enabled, it returns 0.
  *
  * @param task The task for which to return the maximum stack usage.
  *
- * @return The maximum usage of the task's stack so far if
- *         ENABLE_STACK_PAINTING is enabled, or 0 if ENABLE_STACK_PAINTING is
- *         disabled.
+ * @return The maximum usage of the task's stack so far if DIAG_ENABLE is
+ *         enabled, or 0 if DIAG_ENABLE is disabled.
  */
 uint32_t os_get_stack_max_usage(task_t *task);
 

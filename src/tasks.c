@@ -72,6 +72,22 @@ static void __idle_task(void *params)
 	(void) params;
 
 	while(true) {
+		uint64_t curr_tick_count = os_get_tick_count();
+		if (curr_tick_count % 10000 == 0) {
+			CM_ATOMIC_BLOCK() {
+				struct tcb *task = all_tasks.first;
+				while (task != NULL) {
+					diag_task_stack_usage(
+						task->id,
+						os_get_stack_max_size(task),
+						os_get_stack_curr_size(task),
+						os_get_stack_max_usage(task));
+
+					task = task->tasklist_next;
+				}
+			}
+			while (os_get_tick_count() == curr_tick_count);
+		}
 	}
 }
 
@@ -172,8 +188,8 @@ bool os_task_init(task_t *task,
 	task->stack_base = (int *) stack_base;
 	task->stack_size = aligned_stack_top - (uint32_t) stack_base;
 
-#ifdef ENABLE_STACK_PAINTING
-	for (uint32_t i = 0; i < task_stack_size; i++) {
+#ifdef DIAG_ENABLE
+	for (uint32_t i = 0; i < task->stack_size; i++) {
 		stack_base[i] = 0xa5;
 	}
 #endif
@@ -331,21 +347,16 @@ uint32_t os_get_stack_max_size(task_t *task)
 
 uint32_t os_get_stack_curr_size(task_t *task)
 {
-	return (uint32_t) (task->stack - task->stack_base);
+	return (uint32_t) ((((uint8_t *) task->stack_base) + task->stack_size) - (uint8_t *) task->stack);
 }
 
 uint32_t os_get_stack_max_usage(task_t *task)
 {
-#ifdef ENABLE_STACK_PAINTING
-	uint8_t *stack_ptr = NULL;
+#ifdef DIAG_ENABLE
+	uint8_t *stack_ptr = (uint8_t *) task->stack_base;
 
-	for (stack_ptr = ((uint8_t *) task->stack_base) + task->stack_size;
-	     stack_ptr >= (uint8_t *) task->stack_base;
-	     stack_ptr--) {
-
-		if (*stack_ptr != 0xa5) {
-			break;
-		}
+	while (*stack_ptr == 0xa5) {
+		stack_ptr++;
 	}
 
 	return (uint32_t) ((((uint8_t *) task->stack_base) + task->stack_size) - stack_ptr);

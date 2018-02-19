@@ -285,5 +285,27 @@
 				"type": "uint32_t"
 			}
 		]
+	},
+	{
+		"name": "TASK_STACK_USAGE",
+		"text": "Task ID: {task_id}, Stack size: {stack_size}, Current stack usage {curr_stack_size}, Max stack usage {max_stack_size}",
+		"args": [
+			{
+				"name": "task_id",
+				"type": "uint8_t"
+			},
+			{
+				"name": "stack_size",
+				"type": "uint32_t"
+			},
+			{
+				"name": "curr_stack_size",
+				"type": "uint32_t"
+			},
+			{
+				"name": "max_stack_size",
+				"type": "uint32_t"
+			}
+		]
 	}
 ]
