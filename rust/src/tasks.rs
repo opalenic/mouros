@@ -60,12 +60,22 @@ unsafe fn mask_interrupts(mask: u32) -> u32 {
 
 impl CriticalSection {
     pub fn new() -> CriticalSection {
+        unsafe {
+            if let Some(led_func) = super::diag_led_function {
+                led_func(true);
+            }
+        }
         CriticalSection(unsafe { mask_interrupts(1) })
     }
 }
 
 impl Drop for CriticalSection {
     fn drop(&mut self) {
+        unsafe {
+            if let Some(led_func) = super::diag_led_function {
+                led_func(false);
+            }
+        }
         unsafe {
             mask_interrupts(self.0);
         }
@@ -94,7 +104,7 @@ pub struct CriticalLockGuard<'lock, T: 'lock> {
 
 
 impl<T> CriticalLock<T> {
-    pub fn new(item: T) -> CriticalLock<T> {
+    pub const fn new(item: T) -> CriticalLock<T> {
         CriticalLock { data: UnsafeCell::new(item) }
     }
 
