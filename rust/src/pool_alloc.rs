@@ -2,7 +2,7 @@
 use core::ptr;
 use core::marker::PhantomData;
 
-pub struct Pool<'a, T: 'a> {
+pub struct Pool<'a, T> {
     first_block: *mut T,
     _data: PhantomData<&'a mut [T]>,
 }

@@ -87,7 +87,7 @@ pub struct CriticalLock<T> {
     data: UnsafeCell<T>,
 }
 
-pub struct CriticalLockGuard<'lock, T: 'lock> {
+pub struct CriticalLockGuard<'lock, T> {
     lock: &'lock CriticalLock<T>,
     crit_section: CriticalSection,
 }
@@ -98,7 +98,7 @@ impl<T> CriticalLock<T> {
         CriticalLock { data: UnsafeCell::new(item) }
     }
 
-    pub fn lock(&self) -> CriticalLockGuard<T> {
+    pub fn lock(&self) -> CriticalLockGuard<'_, T> {
         CriticalLockGuard {
             lock: &self,
             crit_section: CriticalSection::new(),

@@ -3,6 +3,7 @@
 use core::mem;
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
+use core::mem::MaybeUninit;
 use super::CVoid;
 
 #[repr(C)]
@@ -24,7 +25,7 @@ impl Default for MailboxRaw {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct Mailbox<'mem, T: 'mem> {
+pub struct Mailbox<'mem, T> {
     mb: UnsafeCell<MailboxRaw>,
     _data: PhantomData<&'mem mut [T]>,
 }
@@ -57,7 +58,7 @@ extern "C" {
 
 impl<'mem, T> Mailbox<'mem, T>
 {
-    pub fn new(buf: &'mem mut [T]) -> Mailbox<T> {
+    pub fn new(buf: &'mem mut [T]) -> Mailbox<'_, T> {
         let mb = Mailbox::default();
 
         unsafe {
@@ -126,20 +127,20 @@ pub struct RxChannelSpsc<'mb, 'mem: 'mb, T: 'mem> {
 impl<'mb, 'mem, T> RxChannelSpsc<'mb, 'mem, T> {
     pub fn recv(&self) -> T {
         unsafe {
-            let mut tmp = mem::uninitialized();
+            let mut tmp = MaybeUninit::<T>::uninit();
 
-            while os_mailbox_read(*self.mb.get(), &mut tmp as *mut T as *mut CVoid) != 0 {}
+            while os_mailbox_read(*self.mb.get(), tmp.as_mut_ptr() as *mut CVoid) != 0 {}
 
-            tmp
+            tmp.assume_init()
         }
     }
 
     pub fn try_recv(&self) -> Result<T, RecvError> {
         unsafe {
-            let mut tmp = mem::uninitialized();
+            let mut tmp = MaybeUninit::<T>::uninit();
 
-            if os_mailbox_read(*self.mb.get(), &mut tmp as *mut T as *mut CVoid) != 0 {
-                Ok(tmp)
+            if os_mailbox_read(*self.mb.get(), tmp.as_mut_ptr() as *mut CVoid) != 0 {
+                Ok(tmp.assume_init())
             } else {
                 Err(RecvError)
             }
